@@ -1,0 +1,26 @@
+[
+  {
+    "team_id": "TEAM-A",
+    "current_sprint_goal": "Improve validation reliability",
+    "delivery_pressure": "medium",
+    "manager_priority": "reduce repeated evaluation and leakage issues"
+  },
+  {
+    "team_id": "TEAM-B",
+    "current_sprint_goal": "Ship fairness-reviewed eligibility model",
+    "delivery_pressure": "high",
+    "manager_priority": "stop systematic bias and fairness recurrence"
+  },
+  {
+    "team_id": "TEAM-C",
+    "current_sprint_goal": "Stabilize healthcare deployment monitoring",
+    "delivery_pressure": "medium",
+    "manager_priority": "protect compliance-sensitive reliability"
+  },
+  {
+    "team_id": "TEAM-D",
+    "current_sprint_goal": "Maintain broad quality gates",
+    "delivery_pressure": "low",
+    "manager_priority": "preserve balanced learning across diverse projects"
+  }
+]

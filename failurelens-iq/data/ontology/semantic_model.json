@@ -1,0 +1,17 @@
+{
+  "categories": [
+    "Data Leakage Failure",
+    "Responsible AI / Bias Failure",
+    "Deployment / Drift Failure",
+    "Evaluation Methodology Failure",
+    "Feature Engineering Failure",
+    "Data Quality Failure",
+    "Unknown"
+  ],
+  "certifications": [
+    "DP-100",
+    "AI-102",
+    "DP-203",
+    "PL-300"
+  ]
+}

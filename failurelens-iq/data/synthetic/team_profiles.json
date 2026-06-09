@@ -1,0 +1,54 @@
+[
+  {
+    "team_id": "TEAM-A",
+    "team_name": "Atlas Validation",
+    "domain": "enterprise retention",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "sprint_load": "medium",
+    "team_size": 7,
+    "compliance_sensitivity": "moderate",
+    "ml_maturity": "intermediate"
+  },
+  {
+    "team_id": "TEAM-B",
+    "team_name": "Beacon Fairness",
+    "domain": "financial eligibility",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "sprint_load": "high",
+    "team_size": 8,
+    "compliance_sensitivity": "high",
+    "ml_maturity": "developing"
+  },
+  {
+    "team_id": "TEAM-C",
+    "team_name": "CareSignal ML",
+    "domain": "healthcare",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "sprint_load": "medium",
+    "team_size": 9,
+    "compliance_sensitivity": "high",
+    "ml_maturity": "advanced"
+  },
+  {
+    "team_id": "TEAM-D",
+    "team_name": "Delta Applied AI",
+    "domain": "manufacturing and demand",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "sprint_load": "low",
+    "team_size": 6,
+    "compliance_sensitivity": "moderate",
+    "ml_maturity": "advanced"
+  }
+]

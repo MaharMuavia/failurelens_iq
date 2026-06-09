@@ -1,0 +1,1371 @@
+[
+  {
+    "experiment_id": "EXP-1001",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "88/12",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "prior_ticket_count",
+      "plan_tier"
+    ],
+    "metrics": {
+      "accuracy": 0.93,
+      "minority_f1": 0.14,
+      "roc_auc": 0.72
+    },
+    "baseline_metrics": {
+      "accuracy": 0.89,
+      "minority_f1": 0.42,
+      "roc_auc": 0.77
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Accuracy looked deceptive on an 88/12 class balance; minority class failures were hidden by a holdout validation report.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Evaluation Methodology Failure",
+    "timestamp": "2026-06-07T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-1002",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "training",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "renewal_status_after_30d",
+      "account_age"
+    ],
+    "metrics": {
+      "accuracy": 0.96,
+      "minority_f1": 0.88
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.36
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Validation jumped after a post-outcome renewal_status field entered the feature set, suggesting leakage.",
+    "suspected_leakage_columns": [
+      "renewal_status_after_30d"
+    ],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Data Leakage Failure",
+    "timestamp": "2026-06-03T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-1003",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "90/10",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.92,
+      "minority_f1": 0.16
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "minority_f1": 0.35
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Holdout split produced high accuracy while recall for rare escalation cases stayed weak.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Evaluation Methodology Failure",
+    "timestamp": "2026-05-29T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-1004",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "feature_engineering",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "future_conversion_count",
+      "usage_14d"
+    ],
+    "metrics": {
+      "accuracy": 0.95,
+      "minority_f1": 0.81
+    },
+    "baseline_metrics": {
+      "accuracy": 0.86,
+      "minority_f1": 0.33
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "A target-derived aggregate appears to include future conversion events and created leakage risk.",
+    "suspected_leakage_columns": [
+      "future_conversion_count"
+    ],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Data Leakage Failure",
+    "timestamp": "2026-05-24T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-1005",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "85/15",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.91,
+      "minority_f1": 0.17
+    },
+    "baseline_metrics": {
+      "accuracy": 0.87,
+      "minority_f1": 0.37
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "The team optimized accuracy on imbalanced support escalation data and missed minority class recall.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Evaluation Methodology Failure",
+    "timestamp": "2026-05-17T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-1006",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "training",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.86,
+      "minority_f1": 0.39
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.36
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Partial training improvement, but validation variance requires another review.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "partial",
+    "failure_category_label": "Partial",
+    "timestamp": "2026-05-05T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-2001",
+    "team_id": "TEAM-B",
+    "project_name": "TEAM-B Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-b_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "slice holdout",
+    "class_balance": "78/22",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "income_band",
+      "region_proxy",
+      "protected_attribute_review_flag"
+    ],
+    "metrics": {
+      "accuracy": 0.86,
+      "demographic_parity": 0.41,
+      "group_fairness_score": 0.34
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "demographic_parity": 0.72,
+      "group_fairness_score": 0.7,
+      "minority_f1": 0.38
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Protected attribute fairness review found weak demographic parity and disparate error rates across groups.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Fairness, protected attribute, demographic parity, and responsible AI review were discussed as team process gaps.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Responsible AI / Bias Failure",
+    "timestamp": "2026-06-06T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-2002",
+    "team_id": "TEAM-B",
+    "project_name": "TEAM-B Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-b_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "slice holdout",
+    "class_balance": "78/22",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "income_band",
+      "region_proxy",
+      "protected_attribute_review_flag"
+    ],
+    "metrics": {
+      "accuracy": 0.86,
+      "demographic_parity": 0.41,
+      "group_fairness_score": 0.34
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "demographic_parity": 0.72,
+      "group_fairness_score": 0.7,
+      "minority_f1": 0.38
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Protected attribute fairness review found weak demographic parity and disparate error rates across groups.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Fairness, protected attribute, demographic parity, and responsible AI review were discussed as team process gaps.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Responsible AI / Bias Failure",
+    "timestamp": "2026-05-31T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-2003",
+    "team_id": "TEAM-B",
+    "project_name": "TEAM-B Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-b_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "slice holdout",
+    "class_balance": "78/22",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "income_band",
+      "region_proxy",
+      "protected_attribute_review_flag"
+    ],
+    "metrics": {
+      "accuracy": 0.86,
+      "demographic_parity": 0.41,
+      "group_fairness_score": 0.34
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "demographic_parity": 0.72,
+      "group_fairness_score": 0.7,
+      "minority_f1": 0.38
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Protected attribute fairness review found weak demographic parity and disparate error rates across groups.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Fairness, protected attribute, demographic parity, and responsible AI review were discussed as team process gaps.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Responsible AI / Bias Failure",
+    "timestamp": "2026-05-26T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-2004",
+    "team_id": "TEAM-B",
+    "project_name": "TEAM-B Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-b_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "slice holdout",
+    "class_balance": "78/22",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "income_band",
+      "region_proxy",
+      "protected_attribute_review_flag"
+    ],
+    "metrics": {
+      "accuracy": 0.86,
+      "demographic_parity": 0.41,
+      "group_fairness_score": 0.34
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "demographic_parity": 0.72,
+      "group_fairness_score": 0.7,
+      "minority_f1": 0.38
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Protected attribute fairness review found weak demographic parity and disparate error rates across groups.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Fairness, protected attribute, demographic parity, and responsible AI review were discussed as team process gaps.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Responsible AI / Bias Failure",
+    "timestamp": "2026-05-19T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-2005",
+    "team_id": "TEAM-B",
+    "project_name": "TEAM-B Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-b_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "slice holdout",
+    "class_balance": "78/22",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "income_band",
+      "region_proxy",
+      "protected_attribute_review_flag"
+    ],
+    "metrics": {
+      "accuracy": 0.86,
+      "demographic_parity": 0.41,
+      "group_fairness_score": 0.34
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "demographic_parity": 0.72,
+      "group_fairness_score": 0.7,
+      "minority_f1": 0.38
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Protected attribute fairness review found weak demographic parity and disparate error rates across groups.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Fairness, protected attribute, demographic parity, and responsible AI review were discussed as team process gaps.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Responsible AI / Bias Failure",
+    "timestamp": "2026-05-13T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-2006",
+    "team_id": "TEAM-B",
+    "project_name": "TEAM-B Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-b_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "slice holdout",
+    "class_balance": "78/22",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "income_band",
+      "region_proxy",
+      "protected_attribute_review_flag"
+    ],
+    "metrics": {
+      "accuracy": 0.9,
+      "minority_f1": 0.19
+    },
+    "baseline_metrics": {
+      "accuracy": 0.88,
+      "demographic_parity": 0.72,
+      "group_fairness_score": 0.7,
+      "minority_f1": 0.38
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Accuracy remained the reported metric despite imbalanced approval outcomes.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Fairness, protected attribute, demographic parity, and responsible AI review were discussed as team process gaps.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Evaluation Methodology Failure",
+    "timestamp": "2026-05-02T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-3001",
+    "team_id": "TEAM-C",
+    "project_name": "TEAM-C Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "LightGBM",
+    "dataset_name": "synthetic_healthcare_triage",
+    "pipeline_stage": "monitoring",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.78,
+      "recall": 0.51
+    },
+    "baseline_metrics": {
+      "accuracy": 0.86,
+      "recall": 0.72
+    },
+    "error_logs": [],
+    "drift_indicators": [
+      "medication_code distribution PSI 0.34",
+      "new clinic population shift"
+    ],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "domain": "healthcare",
+      "monitoring_enabled": true,
+      "compliance_sensitivity": "high"
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Healthcare triage model degraded after medication coding distributions drifted in production monitoring.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Deployment / Drift Failure",
+    "timestamp": "2026-06-05T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-3002",
+    "team_id": "TEAM-C",
+    "project_name": "TEAM-C Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "BERT",
+    "dataset_name": "team-c_synthetic_training",
+    "pipeline_stage": "feature_engineering",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "tokenization",
+      "unit stripping",
+      "lowercase normalization"
+    ],
+    "feature_set": [
+      "clinical_note_embedding",
+      "dosage_text_removed"
+    ],
+    "metrics": {
+      "accuracy": 0.73,
+      "f1": 0.48
+    },
+    "baseline_metrics": {
+      "accuracy": 0.81,
+      "f1": 0.62
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Clinical text tokenization removed dosage units, weakening feature signal for risk prediction.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Feature Engineering Failure",
+    "timestamp": "2026-06-01T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-3003",
+    "team_id": "TEAM-C",
+    "project_name": "TEAM-C Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-c_synthetic_training",
+    "pipeline_stage": "deployment",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.76,
+      "recall": 0.49
+    },
+    "baseline_metrics": {
+      "accuracy": 0.85,
+      "recall": 0.7
+    },
+    "error_logs": [],
+    "drift_indicators": [
+      "feature freshness lag 48h",
+      "prediction distribution shifted"
+    ],
+    "data_quality_signals": [
+      "late lab_result partition"
+    ],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Feature freshness lag in the healthcare feed caused monitoring degradation after release.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Deployment / Drift Failure",
+    "timestamp": "2026-05-27T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-3004",
+    "team_id": "TEAM-C",
+    "project_name": "TEAM-C Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-c_synthetic_training",
+    "pipeline_stage": "feature_engineering",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "one-hot encoding",
+      "rare category bucketing"
+    ],
+    "feature_set": [
+      "rare_condition_bucket",
+      "visit_count"
+    ],
+    "metrics": {
+      "accuracy": 0.77,
+      "f1": 0.5
+    },
+    "baseline_metrics": {
+      "accuracy": 0.82,
+      "f1": 0.61
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "One-hot encoding collapsed rare clinical categories into an uninformative other bucket.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Feature Engineering Failure",
+    "timestamp": "2026-05-21T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-3005",
+    "team_id": "TEAM-C",
+    "project_name": "TEAM-C Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-c_synthetic_training",
+    "pipeline_stage": "preprocessing",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.71,
+      "f1": 0.44
+    },
+    "baseline_metrics": {
+      "accuracy": 0.82,
+      "f1": 0.6
+    },
+    "error_logs": [
+      "schema check failed for lab_result_value"
+    ],
+    "drift_indicators": [],
+    "data_quality_signals": [
+      "null spike lab_result_value",
+      "duplicate encounter_id rows"
+    ],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Null spike in lab_result_value and duplicate encounter rows made model evaluation unreliable.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Data Quality Failure",
+    "timestamp": "2026-05-15T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-3006",
+    "team_id": "TEAM-C",
+    "project_name": "TEAM-C Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-c_synthetic_training",
+    "pipeline_stage": "training",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.82,
+      "recall": 0.66
+    },
+    "baseline_metrics": {
+      "accuracy": 0.8,
+      "recall": 0.63
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Partial healthcare feature update improved recall but still needs compliance review.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "DP-203"
+    ],
+    "outcome": "partial",
+    "failure_category_label": "Partial",
+    "timestamp": "2026-04-30T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-4001",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.8,
+      "minority_f1": 0.31
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.42
+    },
+    "error_logs": [
+      "duplicate key check failed"
+    ],
+    "drift_indicators": [],
+    "data_quality_signals": [
+      "schema drift",
+      "duplicate rows"
+    ],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Schema drift and duplicated rows reduced trust in the analytics training table.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Data Quality Failure",
+    "timestamp": "2026-06-04T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-4002",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "monitoring",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.8,
+      "minority_f1": 0.31
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.42
+    },
+    "error_logs": [],
+    "drift_indicators": [
+      "seasonal distribution drift"
+    ],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Monitoring detected prediction distribution drift after a seasonal demand shift.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Deployment / Drift Failure",
+    "timestamp": "2026-05-30T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-4003",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "ResNet",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.8,
+      "minority_f1": 0.31
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.42
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Image preprocessing cropped the defect region and weakened feature signal.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Feature Engineering Failure",
+    "timestamp": "2026-05-25T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-4004",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.8,
+      "minority_f1": 0.31
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.42
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "A future inspection outcome column was included in validation features, indicating leakage.",
+    "suspected_leakage_columns": [
+      "future_inspection_outcome"
+    ],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Data Leakage Failure",
+    "timestamp": "2026-05-20T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-4005",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.8,
+      "minority_f1": 0.31
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.42
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "A random split overstated accuracy for a time-ordered demand forecast.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Evaluation Methodology Failure",
+    "timestamp": "2026-05-15T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "EXP-4006",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "80/20",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "account_age",
+      "support_events"
+    ],
+    "metrics": {
+      "accuracy": 0.8,
+      "minority_f1": 0.31
+    },
+    "baseline_metrics": {
+      "accuracy": 0.84,
+      "minority_f1": 0.42
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Successful control run preserved expected quality gates.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100",
+      "AI-102",
+      "DP-203",
+      "PL-300"
+    ],
+    "outcome": "success",
+    "failure_category_label": "Partial",
+    "timestamp": "2026-05-10T08:00:00+00:00"
+  },
+  {
+    "experiment_id": "SPARSE-001",
+    "team_id": "TEAM-D",
+    "project_name": "TEAM-D Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-d_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "50/50",
+    "preprocessing_steps": [],
+    "feature_set": [],
+    "metrics": {},
+    "baseline_metrics": {},
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {},
+    "deployment_context": {},
+    "failure_symptoms": [],
+    "failure_observation": "Model did not work as expected.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Sparse synthetic record intentionally lacks evidence.",
+    "current_certifications": [],
+    "outcome": "unknown",
+    "failure_category_label": "Unknown",
+    "timestamp": "2026-06-08T08:00:00+00:00"
+  }
+]
