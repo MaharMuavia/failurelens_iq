@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.pytest_cache/
-.venv/
-node_modules/
-dist/
-reports/*.tmp
-.env
-.uvicorn.pid

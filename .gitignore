@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+reports/*.tmp
+.env
+.uvicorn.pid
+.playwright-cli/
+output/
