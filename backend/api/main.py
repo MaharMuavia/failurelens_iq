@@ -21,6 +21,7 @@ from backend.models.schemas import ExperimentLog
 from backend.services.azure_foundry_iq_provider import AzureFoundryIQProvider
 from backend.services.knowledge_index import KnowledgeIndex
 from backend.services.local_iq_provider import LocalIQProvider
+from backend.services.llm_reasoning_provider import LLMReasoningProvider
 from backend.services.report_service import ReportService
 from backend.services.scoring_service import ScoringService
 from backend.utils.data_loader import DataLoader
@@ -44,17 +45,6 @@ from backend.api.routes.manager import router as manager_router
 from backend.api.routes.report import router as report_router
 from backend.api.routes.readiness import router as readiness_router
 from backend.api.routes.cost import router as cost_router
-
-
-class AnalysisOptions(BaseModel):
-    include_reasoning_trace: bool = True
-    include_grounding: bool = True
-    include_certification: bool = True
-
-
-class AnalysisRunRequest(BaseModel):
-    experiment_id: str
-    options: AnalysisOptions = Field(default_factory=AnalysisOptions)
 
 
 JUDGE_AGENTS = [
@@ -154,6 +144,8 @@ def create_app_state_for_tests() -> dict[str, Any]:
     grounding_adapter = GroundingAdapter(azure_config, data_loader, knowledge_index)
     iq_provider = build_iq_provider(azure_config, grounding_adapter, knowledge_index)
     scoring_service = ScoringService()
+    openai_client = AzureOpenAIClient(azure_config)
+    llm_reasoning_provider = LLMReasoningProvider(openai_client)
     
     state = {
         "data_loader": data_loader,
@@ -164,12 +156,13 @@ def create_app_state_for_tests() -> dict[str, Any]:
         "scoring_service": scoring_service,
         "orchestrator": None,
         "report_service": ReportService(Path(settings.REPORT_OUTPUT_DIR)),
-        "openai_client": AzureOpenAIClient(azure_config),
+        "openai_client": openai_client,
+        "llm_reasoning_provider": llm_reasoning_provider,
         "experiment_store": ExperimentStore(data_loader),
         "demo_cache": DemoCache(),
         "uploaded_experiments": {}, # Mirror for backward compatibility
         "startup_loaded": _STARTUP_LOADED,
-        "startup_duration_ms": _STARTUP_DURATION_MS,
+        "startup_duration_ms": _STARTUP_duration_ms if "_STARTUP_duration_ms" in locals() else _STARTUP_DURATION_MS,
         "settings": settings,
     }
     
@@ -260,9 +253,6 @@ def create_app() -> FastAPI:
     app.include_router(cost_router)
 
     return app
-
-
-from backend.api.routes.demo import build_demo_response
 
 
 app = create_app()

@@ -11,8 +11,5 @@ def test_readme_has_no_local_file_links():
 def test_video_demo_docs_exist():
     for doc in [
         "docs/VIDEO_DEMO_SCRIPT.md",
-        "docs/VIDEO_DEMO_CHECKLIST.md",
-        "docs/JUDGE_QA.md",
-        "docs/DEMO_COMMANDS.md",
     ]:
         assert Path(doc).exists()

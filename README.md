@@ -324,7 +324,7 @@ See [PRODUCTION_HARDENING.md](docs/PRODUCTION_HARDENING.md) and [SECURITY_MODEL.
 
 ## Production Hardening Summary
 
-The repository is a production-hardened MVP for hackathon judging: it has API key support, safe demo defaults, CORS validation, request-size limits, rate limiting, structured logs, local persistence, Docker healthchecks, CI, and credential-gated Azure adapters.
+The repository is a DEMO-READY MVP WITH AZURE PRODUCTION ADAPTERS for hackathon judging: it has API key support, safe demo defaults, CORS validation, request-size limits, rate limiting, structured logs, local persistence, Docker healthchecks, CI, and credential-gated Azure adapters.
 
 ## What Is Production-Ready vs MVP
 

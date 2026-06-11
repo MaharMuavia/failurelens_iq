@@ -30,6 +30,7 @@ async def health(request: Request) -> dict[str, object]:
         "microsoft_iq": {
             "selected_layer": "Foundry IQ",
             "provider": type(app.state.iq_provider).__name__,
+            "proof_level": "live_azure" if type(app.state.iq_provider).__name__ == "AzureFoundryIQProvider" else "local_demo_fallback",
             "azure_ai_search_configured": app.state.azure_config.enabled_integrations["azure_ai_search"],
             "azure_openai_configured": app.state.azure_config.enabled_integrations["azure_openai"],
             "production_grounding_ready": (

@@ -25,6 +25,9 @@ jobs:
       - name: Run backend tests
         run: pytest tests -v
 
+      - name: Verify .env is not committed
+        run: python -c "from pathlib import Path; assert not Path('.env').exists(), '.env file must not be committed to repository'"
+
       - name: Check README for local file links
         run: python -c "from pathlib import Path; text=Path('README.md').read_text(encoding='utf-8'); assert 'file:///' not in text"
 
@@ -38,6 +41,10 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm run test -- --run
 
       - name: Build frontend
         working-directory: frontend

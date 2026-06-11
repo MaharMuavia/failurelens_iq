@@ -32,6 +32,8 @@ class Settings(BaseModel):
     REQUEST_TIMEOUT_SECONDS: int = Field(default=30)
     RATE_LIMIT_ENABLED: bool = Field(default=True)
     RATE_LIMIT_PER_MINUTE: int = Field(default=60)
+    RATE_LIMIT_MAX_KEYS: int = Field(default=10000)
+    TRUST_PROXY_HEADERS: bool = Field(default=False)
     DEMO_CACHE_TTL_SECONDS: int = Field(default=300)
     AZURE_MAX_DOCS_TO_INDEX: int = Field(default=200)
     AZURE_MAX_CHUNK_CHARS: int = Field(default=1800)
@@ -100,6 +102,8 @@ class Settings(BaseModel):
             REQUEST_TIMEOUT_SECONDS=get_int_env("REQUEST_TIMEOUT_SECONDS", 30),
             RATE_LIMIT_ENABLED=get_bool_env("RATE_LIMIT_ENABLED", True),
             RATE_LIMIT_PER_MINUTE=get_int_env("RATE_LIMIT_PER_MINUTE", 60),
+            RATE_LIMIT_MAX_KEYS=get_int_env("RATE_LIMIT_MAX_KEYS", 10000),
+            TRUST_PROXY_HEADERS=get_bool_env("TRUST_PROXY_HEADERS", False),
             DEMO_CACHE_TTL_SECONDS=get_int_env("DEMO_CACHE_TTL_SECONDS", 300),
             AZURE_MAX_DOCS_TO_INDEX=get_int_env("AZURE_MAX_DOCS_TO_INDEX", 200),
             AZURE_MAX_CHUNK_CHARS=get_int_env("AZURE_MAX_CHUNK_CHARS", 1800),

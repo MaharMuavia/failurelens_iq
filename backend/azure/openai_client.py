@@ -71,6 +71,36 @@ class AzureOpenAIClient:
             return {"ok": False, "detail": f"Azure OpenAI returned an unexpected response: {exc}"}
         return {"ok": True, "content": self._parse_summary_content(content)}
 
+    async def chat_completion_raw(self, system_prompt: str, user_prompt: str) -> dict[str, Any]:
+        if not self.enabled:
+            return {"ok": False, "detail": "Azure OpenAI integration is disabled"}
+        endpoint = self.config.azure_openai_endpoint.rstrip("/")
+        deployment = self.config.azure_openai_deployment
+        url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-15-preview"
+        body = {
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": settings.AZURE_OPENAI_TEMPERATURE,
+            "max_tokens": settings.AZURE_OPENAI_MAX_TOKENS,
+        }
+        headers = {"api-key": self.config.azure_openai_api_key, "Content-Type": "application/json"}
+        try:
+            async with httpx.AsyncClient(timeout=float(settings.REQUEST_TIMEOUT_SECONDS)) as client:
+                response = await client.post(url, headers=headers, json=body)
+        except httpx.HTTPError as exc:
+            return {"ok": False, "detail": f"Azure OpenAI request failed: {exc}"}
+        if response.status_code >= 400:
+            return {"ok": False, "detail": f"Azure OpenAI failed with {response.status_code}: {response.text[:500]}"}
+        try:
+            payload = response.json()
+            content = payload["choices"][0]["message"]["content"]
+            return {"ok": True, "content": content}
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            return {"ok": False, "detail": f"Azure OpenAI returned an unexpected response: {exc}"}
+
+
     def _build_failure_report_prompt(self, ctx: AgentContext) -> str:
         diagnosis = ctx.diagnosis.root_cause if ctx.diagnosis else "Diagnosis unavailable."
         category = ctx.classification.failure_category.value if ctx.classification else "Unknown"

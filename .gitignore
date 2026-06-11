@@ -15,3 +15,7 @@ reports/*.tmp
 output/
 data/uploads/*.json
 !data/uploads/.gitkeep
+.playwright-mcp/
+*.png
+!docs/assets/*.png
+

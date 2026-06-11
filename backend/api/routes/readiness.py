@@ -103,11 +103,25 @@ def build_readiness_report(config: Settings, integrations: dict[str, bool]) -> d
         else:
             score = 68
 
+    is_live_azure = status == "azure_ready"
+    proof_level = "live_azure" if is_live_azure else "local_demo_fallback"
+
     return {
         "status": status,
         "score": score,
         "checks": checks,
         "missing_for_real_azure_demo": _missing_for_real_azure_demo(config),
+        "microsoft_iq_compliance": {
+            "required_iq_layer": "Foundry IQ",
+            "implemented": True,
+            "implementation": "Azure AI Search grounded retrieval connected to reasoning agents",
+            "proof_level": proof_level,
+            **({"honest_limitation": "Demo mode uses local grounding; Azure AI Search is not connected."} if not is_live_azure else {}),
+            "proof": {
+                "active_iq_provider": "AzureFoundryIQProvider" if is_live_azure else "LocalIQProvider",
+                "azure_ai_search_configured": checks["azure_ai_search_configured"],
+            },
+        },
         "judge_recommendation": (
             "Record with Azure mode enabled to show Foundry IQ proof."
             if status == "azure_ready"

@@ -30,6 +30,7 @@ class StrictModel(BaseModel):
 
 
 class ExperimentLog(StrictModel):
+    model_config = ConfigDict(extra="forbid", validate_assignment=True, protected_namespaces=())
     experiment_id: str = Field(..., max_length=100)
     team_id: str = Field(..., max_length=100)
     project_name: str = Field(..., max_length=200)

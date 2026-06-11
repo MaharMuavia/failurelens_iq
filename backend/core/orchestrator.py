@@ -21,6 +21,7 @@ from backend.models.schemas import AgentContext, ExperimentLog
 from backend.services.knowledge_index import KnowledgeIndex
 from backend.services.local_iq_provider import LocalIQProvider
 from backend.services.scoring_service import ScoringService
+from backend.services.llm_reasoning_provider import LLMReasoningProvider
 from backend.utils.data_loader import DataLoader
 
 
@@ -36,15 +37,24 @@ class Orchestrator:
         self.scoring_service: ScoringService = getter("scoring_service") or ScoringService()
         self.planner = Planner()
         self.gate = ConfidenceGate()
+        
+        openai_client = getter("openai_client")
+        if not openai_client:
+            from backend.azure.config import load_azure_config
+            from backend.azure.openai_client import AzureOpenAIClient
+            openai_client = AzureOpenAIClient(load_azure_config())
+        self.llm_reasoning_provider = LLMReasoningProvider(openai_client)
+
         deps = {"iq_provider": self.iq_provider, "scoring_service": self.scoring_service, "data_loader": self.data_loader}
         self.intake = IntakeAgent(**deps)
         self.classifier = ClassifierAgent(**deps)
-        self.diagnostic = DiagnosticAgent(**deps)
+        self.diagnostic = DiagnosticAgent(llm_reasoning_provider=self.llm_reasoning_provider, **deps)
         self.historian = ExperimentHistorianAgent(**deps)
         self.cert_mapper = CertMapperAgent(**deps)
         self.remediation = RemediationAgent(**deps)
         self.assessment = AssessmentAgent(**deps)
         self.manager = ManagerAgent(**deps)
+
 
     async def run(self, experiment: ExperimentLog, emitter: asyncio.Queue | None = None) -> AgentContext:
         started = perf_counter()

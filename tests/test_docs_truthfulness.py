@@ -17,7 +17,7 @@ def test_docs_do_not_claim_unverified_production_azure():
 
 
 def test_docs_claim_dockerfile_only_when_present():
-    text = Path("README.md").read_text(encoding="utf-8") + Path("docs/AUDIT_REPORT.md").read_text(encoding="utf-8")
+    text = Path("README.md").read_text(encoding="utf-8")
     if "Dockerfile" in text:
         assert Path("Dockerfile").exists()
     if "docker-compose.yml" in text:

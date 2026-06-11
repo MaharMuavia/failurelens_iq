@@ -61,7 +61,11 @@ async def run_analysis_body(
 
 
 @router.get("/analysis/stream/{experiment_id}")
-async def stream_analysis(request: Request, experiment_id: str) -> StreamingResponse:
+async def stream_analysis(
+    request: Request,
+    experiment_id: str,
+    _auth: Any = Depends(require_api_key)
+) -> StreamingResponse:
     exp = await get_experiment_by_id(request, experiment_id)
     orchestrator = request.app.state.orchestrator
     queue: asyncio.Queue = asyncio.Queue()
@@ -73,12 +77,26 @@ async def stream_analysis(request: Request, experiment_id: str) -> StreamingResp
         task = asyncio.create_task(runner())
         try:
             while True:
-                event = await queue.get()
-                yield f"data: {json.dumps(event)}\n\n"
-                if event["event"] in {"pipeline_completed", "pipeline_failed"}:
+                if await request.is_disconnected():
+                    task.cancel()
                     break
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=0.5)
+                    yield f"data: {json.dumps(event)}\n\n"
+                    if event["event"] in {"pipeline_completed", "pipeline_failed"}:
+                        break
+                except asyncio.TimeoutError:
+                    continue
+        except asyncio.CancelledError:
+            task.cancel()
+            raise
         finally:
-            await task
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
     return StreamingResponse(events(), media_type="text/event-stream")
 
