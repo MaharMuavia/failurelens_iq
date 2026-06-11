@@ -2,24 +2,46 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, ValidationError
 
 from backend.azure.config import load_azure_config
 from backend.azure.grounding_adapter import GroundingAdapter
+from backend.azure.openai_client import AzureOpenAIClient
 from backend.core.orchestrator import Orchestrator
 from backend.models.enums import RetrievalMode
 from backend.models.schemas import ExperimentLog
+from backend.services.azure_foundry_iq_provider import AzureFoundryIQProvider
 from backend.services.knowledge_index import KnowledgeIndex
 from backend.services.local_iq_provider import LocalIQProvider
 from backend.services.report_service import ReportService
 from backend.services.scoring_service import ScoringService
 from backend.utils.data_loader import DataLoader
+
+# Hardening Modules
+from backend.core.config import settings
+from backend.core.middleware import MaxBodySizeMiddleware, SecurityHeadersMiddleware
+from backend.core.rate_limit import RateLimitMiddleware
+from backend.core.logging import StructuredLoggingMiddleware, logger
+from backend.services.experiment_store import ExperimentStore
+from backend.services.demo_cache import DemoCache
+
+# Routers
+from backend.api.routes.health import router as health_router
+from backend.api.routes.agents import router as agents_router
+from backend.api.routes.experiments import router as experiments_router
+from backend.api.routes.analysis import router as analysis_router
+from backend.api.routes.demo import router as demo_router
+from backend.api.routes.knowledge import router as knowledge_router
+from backend.api.routes.manager import router as manager_router
+from backend.api.routes.report import router as report_router
 
 
 class AnalysisOptions(BaseModel):
@@ -85,256 +107,158 @@ JUDGE_AGENTS = [
 ]
 
 
+def build_iq_provider(config: Any, grounding_adapter: GroundingAdapter, knowledge_index: KnowledgeIndex) -> Any:
+    if config.app_mode == "production" or os.getenv("IQ_PROVIDER", "").strip().lower() == "azure_foundry":
+        return AzureFoundryIQProvider(grounding_adapter)
+    return LocalIQProvider(knowledge_index)
+
+
+# Global singletons to prevent repeated disk loading during app re-creations in tests
+_GLOBAL_DATA_LOADER: DataLoader | None = None
+_GLOBAL_KNOWLEDGE_INDEX: KnowledgeIndex | None = None
+_GLOBAL_ORCHESTRATOR: Orchestrator | None = None
+_STARTUP_DURATION_MS: float = 0.0
+_STARTUP_LOADED: bool = False
+
+def get_global_data_loader() -> DataLoader:
+    global _GLOBAL_DATA_LOADER
+    if _GLOBAL_DATA_LOADER is None:
+        _GLOBAL_DATA_LOADER = DataLoader()
+        _GLOBAL_DATA_LOADER.load_all()
+    return _GLOBAL_DATA_LOADER
+
+def get_global_knowledge_index() -> KnowledgeIndex:
+    global _GLOBAL_KNOWLEDGE_INDEX
+    if _GLOBAL_KNOWLEDGE_INDEX is None:
+        _GLOBAL_KNOWLEDGE_INDEX = KnowledgeIndex(Path(settings.KNOWLEDGE_DIR))
+    return _GLOBAL_KNOWLEDGE_INDEX
+
+def init_startup_globals():
+    global _STARTUP_DURATION_MS, _STARTUP_LOADED
+    if _STARTUP_LOADED:
+        return
+    start = time.perf_counter()
+    get_global_data_loader()
+    get_global_knowledge_index()
+    _STARTUP_DURATION_MS = round((time.perf_counter() - start) * 1000, 3)
+    _STARTUP_LOADED = True
+
+
 def create_app_state_for_tests() -> dict[str, Any]:
-    data_loader = DataLoader()
-    data_loader.load_all()
-    knowledge_index = KnowledgeIndex(Path("knowledge/foundry_docs"))
+    init_startup_globals()
+    data_loader = get_global_data_loader()
+    knowledge_index = get_global_knowledge_index()
     azure_config = load_azure_config()
-    iq_provider = LocalIQProvider(knowledge_index)
+    grounding_adapter = GroundingAdapter(azure_config, data_loader, knowledge_index)
+    iq_provider = build_iq_provider(azure_config, grounding_adapter, knowledge_index)
     scoring_service = ScoringService()
+    
     state = {
         "data_loader": data_loader,
         "knowledge_index": knowledge_index,
         "azure_config": azure_config,
-        "grounding_adapter": GroundingAdapter(azure_config, data_loader, knowledge_index),
+        "grounding_adapter": grounding_adapter,
         "iq_provider": iq_provider,
         "scoring_service": scoring_service,
         "orchestrator": None,
-        "report_service": ReportService(Path("reports")),
+        "report_service": ReportService(Path(settings.REPORT_OUTPUT_DIR)),
+        "openai_client": AzureOpenAIClient(azure_config),
+        "experiment_store": ExperimentStore(data_loader),
+        "demo_cache": DemoCache(),
+        "uploaded_experiments": {}, # Mirror for backward compatibility
+        "startup_loaded": _STARTUP_LOADED,
+        "startup_duration_ms": _STARTUP_DURATION_MS,
+        "settings": settings,
     }
-    state["orchestrator"] = Orchestrator(state)
+    
+    global _GLOBAL_ORCHESTRATOR
+    if _GLOBAL_ORCHESTRATOR is None:
+        _GLOBAL_ORCHESTRATOR = Orchestrator(state)
+    state["orchestrator"] = _GLOBAL_ORCHESTRATOR
+    
+    # Link back to maintain compatibility with test suites modifying app.state.uploaded_experiments directly
+    state["uploaded_experiments"] = state["experiment_store"]._cache
+    
     return state
 
 
 def create_app() -> FastAPI:
+    # Check if auth enabled but API_KEY missing (critical requirement 4)
+    if settings.ENABLE_AUTH and not settings.API_KEY:
+        raise ValueError("Authentication is enabled (ENABLE_AUTH=True), but API_KEY is not configured.")
+
+    # Validate CORS in production
+    cors_origins = settings.CORS_ORIGINS
+    if settings.APP_MODE == "production":
+        if settings.CORS_ALLOW_CREDENTIALS and ("*" in cors_origins or any(o == "*" for o in cors_origins)):
+            raise ValueError("CORS configuration is unsafe: Wildcard '*' origins are not allowed with allow_credentials=True in production mode.")
+
     app = FastAPI(title="FailureLens IQ", version="1.0.0")
+
+    # Add Middlewares (order matters: request flows from top to bottom, response from bottom to top)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:3000"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+        allow_methods=settings.CORS_ALLOW_METHODS,
+        allow_headers=settings.CORS_ALLOW_HEADERS,
     )
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(MaxBodySizeMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(StructuredLoggingMiddleware)
+
+    # Initialize app state
     state = create_app_state_for_tests()
     for key, value in state.items():
         setattr(app.state, key, value)
 
-    def loader() -> DataLoader:
-        return app.state.data_loader
+    # Exception Handlers
+    @app.exception_handler(ValidationError)
+    async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": "invalid_experiment_payload",
+                "details": exc.errors()
+            }
+        )
 
-    def orchestrator() -> Orchestrator:
-        return app.state.orchestrator
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": "http_error",
+                "detail": exc.detail
+            }
+        )
 
-    async def analyze_experiment(experiment_id: str) -> Any:
-        try:
-            exp = loader().get_experiment(experiment_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        return await orchestrator().run(exp)
+    @app.exception_handler(Exception)
+    async def generic_exception_handler(request: Request, exc: Exception):
+        logger.exception(f"Unhandled exception: {exc}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "internal_server_error",
+                "detail": "An unexpected error occurred. Please contact the administrator."
+            }
+        )
 
-    @app.get("/health")
-    async def health() -> dict[str, object]:
-        return {
-            "status": "ok",
-            "app_mode": app.state.azure_config.app_mode,
-            "version": "1.0.0",
-            "experiments_loaded": len(loader().experiments),
-            "knowledge_chunks_indexed": len(app.state.knowledge_index.chunks),
-            "enabled_integrations": app.state.azure_config.enabled_integrations,
-            "demo_ready": True,
-        }
-
-    @app.get("/agents")
-    async def agents() -> list[dict[str, Any]]:
-        return JUDGE_AGENTS
-
-    @app.get("/experiments")
-    async def list_experiments(
-        page: int = 1,
-        limit: int = 25,
-        team_id: str | None = None,
-        outcome: str | None = None,
-        failure_category: str | None = None,
-    ) -> dict[str, Any]:
-        items = loader().experiments
-        if team_id:
-            items = [item for item in items if item.team_id == team_id]
-        if outcome:
-            items = [item for item in items if item.outcome == outcome]
-        if failure_category:
-            items = [item for item in items if (item.failure_category_label or "") == failure_category]
-        start = max(page - 1, 0) * limit
-        page_items = items[start : start + limit]
-        return {"total": len(items), "page": page, "limit": limit, "items": [item.model_dump(mode="json") for item in page_items]}
-
-    @app.get("/experiments/{experiment_id}")
-    async def get_experiment(experiment_id: str) -> dict[str, Any]:
-        try:
-            return loader().get_experiment(experiment_id).model_dump(mode="json")
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.post("/analysis/run/{experiment_id}")
-    async def run_analysis(experiment_id: str) -> dict[str, Any]:
-        ctx = await analyze_experiment(experiment_id)
-        return ctx.model_dump(mode="json")
-
-    @app.post("/analysis/run")
-    async def run_analysis_body(payload: AnalysisRunRequest) -> dict[str, Any]:
-        ctx = await analyze_experiment(payload.experiment_id)
-        result = ctx.model_dump(mode="json")
-        if payload.options.include_grounding:
-            refs = await app.state.grounding_adapter.retrieve_experiment_context(payload.experiment_id)
-            result["grounding_summary"] = await app.state.grounding_adapter.build_grounding_summary(refs)
-        return result
-
-    @app.post("/demo/run")
-    async def run_demo() -> dict[str, Any]:
-        ctx = await analyze_experiment("EXP-1001")
-        refs = []
-        refs.extend(await app.state.grounding_adapter.retrieve_experiment_context("EXP-1001"))
-        refs.extend(await app.state.grounding_adapter.retrieve_historical_failures(ctx.diagnosis.knowledge_gap if ctx.diagnosis else "ml failure", top_k=5))
-        grounding_summary = await app.state.grounding_adapter.build_grounding_summary(refs)
-        store_result = await app.state.grounding_adapter.store_reasoning_trace(ctx.run_id, ctx.model_dump(mode="json"))
-        return build_demo_response(ctx, grounding_summary, store_result)
-
-    @app.post("/experiments/upload")
-    async def upload_experiment(payload: ExperimentLog) -> dict[str, Any]:
-        return {
-            "status": "validated",
-            "message": "Experiment JSON passed Pydantic validation. It can be submitted to /analysis/custom or /analysis/run after persistence is added.",
-            "experiment": payload.model_dump(mode="json"),
-        }
-
-    @app.get("/analysis/stream/{experiment_id}")
-    async def stream_analysis(experiment_id: str) -> StreamingResponse:
-        try:
-            exp = loader().get_experiment(experiment_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        queue: asyncio.Queue = asyncio.Queue()
-
-        async def runner() -> None:
-            await orchestrator().run(exp, queue)
-
-        async def events():
-            task = asyncio.create_task(runner())
-            try:
-                while True:
-                    event = await queue.get()
-                    yield f"data: {json.dumps(event)}\n\n"
-                    if event["event"] in {"pipeline_completed", "pipeline_failed"}:
-                        break
-            finally:
-                await task
-
-        return StreamingResponse(events(), media_type="text/event-stream")
-
-    @app.post("/analysis/custom")
-    async def custom_analysis(payload: dict[str, Any]) -> dict[str, Any]:
-        exp = ExperimentLog.model_validate(payload)
-        ctx = await orchestrator().run(exp)
-        return ctx.model_dump(mode="json")
-
-    @app.get("/manager/team/{team_id}")
-    async def manager_team(team_id: str) -> dict[str, Any]:
-        experiments = loader().experiments_for_team(team_id)
-        if not experiments:
-            raise HTTPException(status_code=404, detail=f"Unknown team_id: {team_id}")
-        ctx = await orchestrator().run(experiments[-1])
-        return ctx.team_insights.model_dump(mode="json") if ctx.team_insights else {}
-
-    @app.get("/manager/all")
-    async def manager_all() -> dict[str, Any]:
-        result = {}
-        for team_id in sorted(loader().team_profiles):
-            experiments = loader().experiments_for_team(team_id)
-            ctx = await orchestrator().run(experiments[-1])
-            result[team_id] = ctx.team_insights.model_dump(mode="json") if ctx.team_insights else {}
-        return result
-
-    @app.get("/knowledge/search")
-    async def knowledge_search(
-        q: str = Query(..., min_length=1),
-        top_k: int = 3,
-        cert_filter: str | None = None,
-    ) -> dict[str, Any]:
-        retrieval = await app.state.iq_provider.retrieve(q, top_k=top_k, cert_filter=cert_filter)
-        return retrieval.model_dump(mode="json")
-
-    @app.get("/knowledge/sources")
-    async def knowledge_sources() -> list[dict[str, object]]:
-        return app.state.knowledge_index.sources()
-
-    @app.post("/report/{experiment_id}/generate")
-    async def generate_report(experiment_id: str) -> dict[str, Any]:
-        try:
-            exp = loader().get_experiment(experiment_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        ctx = await orchestrator().run(exp)
-        path = app.state.report_service.generate(ctx)
-        return {"experiment_id": experiment_id, "path": str(path), "bytes": path.stat().st_size}
-
-    @app.get("/report/{experiment_id}")
-    async def get_report(experiment_id: str) -> dict[str, Any]:
-        path = Path("reports") / f"{experiment_id}.md"
-        if not path.exists():
-            raise HTTPException(status_code=404, detail="Report has not been generated yet.")
-        return {"experiment_id": experiment_id, "path": str(path), "content": path.read_text(encoding="utf-8")}
+    # Register Routers
+    app.include_router(health_router)
+    app.include_router(agents_router)
+    app.include_router(experiments_router)
+    app.include_router(analysis_router)
+    app.include_router(demo_router)
+    app.include_router(knowledge_router)
+    app.include_router(manager_router)
+    app.include_router(report_router)
 
     return app
 
 
-def build_demo_response(ctx: Any, grounding_summary: dict[str, Any], store_result: dict[str, Any]) -> dict[str, Any]:
-    exp = ctx.experiment
-    classification = ctx.classification.model_dump(mode="json") if ctx.classification else {}
-    diagnosis = ctx.diagnosis.model_dump(mode="json") if ctx.diagnosis else {}
-    historical = ctx.historical_memory.model_dump(mode="json") if ctx.historical_memory else {}
-    remediation = ctx.remediation.model_dump(mode="json") if ctx.remediation else {}
-    cert_ready = {
-        "mapping": ctx.cert_mapping.model_dump(mode="json") if ctx.cert_mapping else {},
-        "assessment": ctx.assessment.model_dump(mode="json") if ctx.assessment else {},
-    }
-    traces = [trace.model_dump(mode="json") for trace in ctx.agent_trace]
-    return {
-        "demo_title": "Customer churn model failed validation gate",
-        "executive_summary": (
-            f"{exp.experiment_id} failed because {diagnosis.get('root_cause', 'the root cause needs review')} "
-            f"The agents classified it as {classification.get('failure_category', 'Unknown')} with overall confidence {ctx.overall_confidence:.2f}."
-        ),
-        "agent_workflow": [
-            {
-                "agent_name": trace["agent_name"],
-                "role": trace["role"],
-                "status": trace["status"],
-                "confidence_score": trace["confidence_score"],
-                "findings": trace["findings"][:2],
-                "recommended_next_actions": trace["recommended_next_actions"],
-            }
-            for trace in traces
-        ],
-        "failure_classification": classification,
-        "root_cause_analysis": diagnosis,
-        "historical_memory": historical,
-        "remediation_plan": remediation,
-        "certification_readiness": cert_ready,
-        "reasoning_timeline": traces,
-        "grounding_summary": grounding_summary,
-        "confidence_summary": {
-            "overall_confidence": ctx.overall_confidence,
-            "requires_human_review": ctx.requires_human_review,
-            "gate_passed": ctx.gate_passed,
-            "human_review_reason": ctx.human_review_reason,
-        },
-        "manager_summary": ctx.team_insights.model_dump(mode="json") if ctx.team_insights else {},
-        "trace_storage": store_result,
-        "judge_notes": {
-            "why_agents_are_needed": "The workflow separates classification, diagnosis, historical memory, remediation, certification readiness, and manager synthesis so each step can expose evidence, uncertainty, and audit entries.",
-            "where_microsoft_iq_is_used": grounding_summary.get("message", "Demo mode uses local grounding; Azure adapters activate only when credentials are configured."),
-            "why_this_is_enterprise": "The response includes confidence gates, human-review flags, grounding citations, manager rollups, and trace storage boundaries for Azure Cosmos DB.",
-        },
-    }
+from backend.api.routes.demo import build_demo_response
 
 
 app = create_app()

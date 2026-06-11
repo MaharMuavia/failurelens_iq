@@ -1,0 +1,57 @@
+{
+  "EXP-UPLOAD-PERSIST-1": {
+    "experiment_id": "EXP-UPLOAD-PERSIST-1",
+    "team_id": "TEAM-A",
+    "project_name": "TEAM-A Learning Memory Model",
+    "role": "ML Engineer",
+    "model_type": "XGBoost",
+    "dataset_name": "team-a_synthetic_training",
+    "pipeline_stage": "evaluation",
+    "target": "predict operational risk from customer interaction events",
+    "validation_strategy": "holdout",
+    "class_balance": "88/12",
+    "preprocessing_steps": [
+      "missing value imputation",
+      "standard scaling"
+    ],
+    "feature_set": [
+      "usage_7d",
+      "prior_ticket_count",
+      "plan_tier"
+    ],
+    "metrics": {
+      "accuracy": 0.93,
+      "minority_f1": 0.14,
+      "roc_auc": 0.72
+    },
+    "baseline_metrics": {
+      "accuracy": 0.89,
+      "minority_f1": 0.42,
+      "roc_auc": 0.77
+    },
+    "error_logs": [],
+    "drift_indicators": [],
+    "data_quality_signals": [],
+    "training_config": {
+      "seed": 42,
+      "max_depth": 6,
+      "learning_rate": 0.08
+    },
+    "deployment_context": {
+      "environment": "offline-synthetic",
+      "monitoring_enabled": true
+    },
+    "failure_symptoms": [
+      "validation result did not translate into reliable team learning"
+    ],
+    "failure_observation": "Uploaded experiment failed because validation hid minority-class behavior.",
+    "suspected_leakage_columns": [],
+    "engineer_notes": "Team review captured this as a process learning opportunity.",
+    "current_certifications": [
+      "DP-100"
+    ],
+    "outcome": "failure",
+    "failure_category_label": "Evaluation Methodology Failure",
+    "timestamp": "2026-06-07T08:00:00Z"
+  }
+}

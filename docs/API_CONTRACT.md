@@ -4,7 +4,7 @@ Base URL: `http://localhost:8000`
 
 ## GET /health
 
-Returns app mode, version, demo readiness, experiment count, knowledge chunk count, and enabled integrations.
+Returns app mode, active IQ provider, version, demo readiness, experiment count, knowledge chunk count, and enabled integrations.
 
 ## GET /agents
 
@@ -25,7 +25,13 @@ Runs the complete EXP-1001 judge demo and returns:
 - `reasoning_timeline`
 - `grounding_summary`
 - `confidence_summary`
+- `demo_runtime_checks`
+- `azure_status`
+- `repo_readiness`
 - `manager_summary`
+- `trace_storage`
+- `report_artifact`
+- `judge_talk_track`
 - `judge_notes`
 
 ## POST /analysis/run
@@ -55,7 +61,17 @@ Server-sent events stream. Emits pipeline and agent events as JSON in `data:` me
 
 ## POST /experiments/upload
 
-Accepts an experiment JSON payload and validates it using the `ExperimentLog` Pydantic schema. The current MVP validates but does not persist uploaded experiments.
+Accepts an experiment JSON payload, validates it using the `ExperimentLog` Pydantic schema, and stores it in memory for the current API process.
+
+Returns:
+
+```json
+{
+  "status": "stored",
+  "experiment_id": "EXP-UPLOAD-1",
+  "next_step": "POST /analysis/run with this experiment_id"
+}
+```
 
 ## GET /experiments
 

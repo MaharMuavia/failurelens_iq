@@ -30,16 +30,16 @@ class StrictModel(BaseModel):
 
 
 class ExperimentLog(StrictModel):
-    experiment_id: str
-    team_id: str
-    project_name: str
-    role: str
-    model_type: str
-    dataset_name: str
-    pipeline_stage: str
-    target: str
-    validation_strategy: str
-    class_balance: str
+    experiment_id: str = Field(..., max_length=100)
+    team_id: str = Field(..., max_length=100)
+    project_name: str = Field(..., max_length=200)
+    role: str = Field(..., max_length=100)
+    model_type: str = Field(..., max_length=100)
+    dataset_name: str = Field(..., max_length=200)
+    pipeline_stage: str = Field(..., max_length=100)
+    target: str = Field(..., max_length=100)
+    validation_strategy: str = Field(..., max_length=200)
+    class_balance: str = Field(..., max_length=100)
     preprocessing_steps: list[str] = Field(default_factory=list)
     feature_set: list[str] = Field(default_factory=list)
     metrics: dict[str, float] = Field(default_factory=dict)
@@ -50,12 +50,12 @@ class ExperimentLog(StrictModel):
     training_config: dict[str, Any] = Field(default_factory=dict)
     deployment_context: dict[str, Any] = Field(default_factory=dict)
     failure_symptoms: list[str] = Field(default_factory=list)
-    failure_observation: str
+    failure_observation: str = Field(..., max_length=5000)
     suspected_leakage_columns: list[str] = Field(default_factory=list)
-    engineer_notes: str = ""
+    engineer_notes: str = Field(default="", max_length=5000)
     current_certifications: list[str] = Field(default_factory=list)
-    outcome: str
-    failure_category_label: str | None = None
+    outcome: str = Field(..., max_length=50)
+    failure_category_label: str | None = Field(default=None, max_length=100)
     timestamp: datetime
 
     @field_validator("outcome")
@@ -228,6 +228,10 @@ class GroundingRef(StrictModel):
     excerpt: str
     citation: str
     confidence: float = 0.0
+    url: str | None = None
+    source_system: str | None = None
+    retrieved_at: datetime | None = None
+    chunk_id: str | None = None
 
 
 class ReasoningStep(StrictModel):

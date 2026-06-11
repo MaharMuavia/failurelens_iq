@@ -29,7 +29,7 @@ A single classifier can label a failed run, but it cannot safely explain why the
 
 ## Microsoft IQ / Azure Foundry Integration
 
-FailureLens IQ runs in demo mode with local grounding by default. Production mode includes Azure adapter boundaries for Azure AI Search, Azure OpenAI, Blob Storage, and Cosmos DB. Real Azure calls are enabled only when credentials are provided.
+FailureLens IQ runs in demo mode with local grounding by default. Production mode includes live, credential-gated adapters for Azure AI Search, Azure OpenAI, Blob Storage, and Cosmos DB. Real Azure calls are enabled only when credentials are provided.
 
 Current demo behavior:
 
@@ -45,6 +45,14 @@ Adapter boundary:
 - `backend/azure/ai_search_client.py`
 - `backend/azure/blob_client.py`
 - `backend/azure/cosmos_client.py`
+
+Production proof points:
+
+- `APP_MODE=production` or `IQ_PROVIDER=azure_foundry` activates `AzureFoundryIQProvider`.
+- Azure AI Search uses the REST API and falls back from semantic search to simple search when needed.
+- Azure OpenAI can generate a concise report summary without exposing hidden chain-of-thought.
+- Cosmos DB stores reasoning traces when configured.
+- Blob Storage uploads markdown report artifacts when configured.
 
 ## Architecture Diagram
 
@@ -152,6 +160,12 @@ Open `http://localhost:5173`.
 
 ## Docker Setup
 
+For a local demo, Docker Compose runs with demo defaults. For Azure credentials, copy the sample environment first:
+
+```powershell
+copy .env.example .env
+```
+
 ```powershell
 docker compose up --build
 ```
@@ -160,7 +174,7 @@ The API is served on `http://localhost:8000` and the frontend on `http://localho
 
 ## Azure Production Setup
 
-Copy `.env.example` to `.env` and set `APP_MODE=production`. Azure features are enabled only when the matching credentials exist:
+Copy `.env.example` to `.env` and set `APP_MODE=production` plus `IQ_PROVIDER=azure_foundry`. Azure features are enabled only when the matching credentials exist:
 
 - Azure OpenAI: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT`
 - Azure AI Search: `AZURE_AI_SEARCH_ENDPOINT`, `AZURE_AI_SEARCH_KEY`, `AZURE_AI_SEARCH_INDEX`
@@ -168,6 +182,23 @@ Copy `.env.example` to `.env` and set `APP_MODE=production`. Azure features are 
 - Azure Cosmos DB: `AZURE_COSMOS_ENDPOINT`, `AZURE_COSMOS_KEY`, `AZURE_COSMOS_DATABASE`, `AZURE_COSMOS_CONTAINER`
 
 If credentials are missing, the adapter returns clear warnings instead of fake Azure results.
+
+See `docs/LIVE_AZURE_DEMO.md` for Azure AI Search index fields and live demo verification steps.
+
+## How To Prove Azure Integration To Judges
+
+```powershell
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/demo/run
+```
+
+Expected proof points with credentials configured:
+
+- `enabled_integrations.azure_ai_search = true`
+- `active_iq_provider = "AzureFoundryIQProvider"`
+- `grounding_summary.source_types` includes `azure_ai_search`
+- `trace_storage.stored = true` when Cosmos DB is configured and reachable
+- `azure_status.blob_report_uploaded = true` when Blob Storage is configured and reachable
 
 ## Demo Flow For Judges
 
@@ -196,7 +227,13 @@ Then open the frontend and click `Judge Demo`.
 - `reasoning_timeline`
 - `grounding_summary`
 - `confidence_summary`
+- `demo_runtime_checks`
+- `azure_status`
+- `repo_readiness`
 - `manager_summary`
+- `trace_storage`
+- `report_artifact`
+- `judge_talk_track`
 - `judge_notes`
 
 ## Testing
@@ -205,7 +242,20 @@ Then open the frontend and click `Judge Demo`.
 pytest tests -v
 ```
 
-The tests cover health contract, agents endpoint, demo report, reasoning schema, grounding refs, frontend API contract, no committed `.venv`, and docs truthfulness.
+The tests cover health contract, provider switching, Azure clients, upload persistence, demo runtime checks, agents endpoint, demo report, reasoning schema, grounding refs, frontend API contract, no committed `.venv`, docs truthfulness, API key auth, CORS config, payload size limit, rate limiting, demo caching, manager scaling, security headers, and Docker config.
+
+## Production Hardening
+
+FailureLens IQ has been audited and hardened with production-ready security and stability controls:
+- **API Key Security:** Mutation endpoints are protected by `X-API-Key` headers when `ENABLE_AUTH=true`.
+- **CORS Hardening:** Origins loaded dynamically from the environment. Unsafe CORS configurations with credentials in production trigger startup failures.
+- **Denial of Service (DoS) Protections:** Cap request sizes using custom `MaxBodySizeMiddleware` and enforce simple in-memory rate limiting.
+- **Clean Configuration Model:** Centralized Pydantic settings parsing environment variables.
+- **Route Refactoring:** Decoupled `main.py` into distinct, granular endpoint routers.
+- **Docker Compose Healthchecks:** Added urllib/node health checks to ensure container health.
+- **Frontend Error Boundaries:** Wrap React App with custom Error Boundary fallbacks.
+
+See [PRODUCTION_HARDENING.md](file:///c:/Users/mouav/OneDrive/Desktop/failurelens/docs/PRODUCTION_HARDENING.md) and [SECURITY_MODEL.md](file:///c:/Users/mouav/OneDrive/Desktop/failurelens/docs/SECURITY_MODEL.md) for more details.
 
 ## Judging Alignment
 
@@ -223,15 +273,11 @@ FailureLens IQ aligns with the Reasoning Agents track by showing:
 
 - The bundled demo data is synthetic.
 - Demo mode uses local grounding, not live Microsoft IQ or Azure AI Search.
-- Azure OpenAI, AI Search, Blob Storage, and Cosmos DB are adapter boundaries unless credentials are configured.
+- Azure OpenAI, AI Search, Blob Storage, and Cosmos DB perform real calls only when credentials are configured.
 - The frontend is an MVP dashboard, not a full experiment management product.
 - Reports are generated as markdown files in `reports/` for local demo use.
 
 ## Roadmap
 
-- Persist uploaded experiments.
-- Add real Azure AI Search retrieval when credentials are available.
-- Store traces in Cosmos DB in production mode.
-- Upload artifacts to Azure Blob Storage.
 - Add role-based auth and organization workspaces.
 - Add MLflow or Azure ML experiment ingestion.

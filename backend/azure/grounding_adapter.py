@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from backend.azure.ai_search_client import AzureAISearchClient
@@ -29,6 +30,7 @@ class GroundingAdapter:
         self.search_client = AzureAISearchClient(self.config)
         self.blob_client = AzureBlobClient(self.config)
         self.cosmos_client = AzureCosmosTraceClient(self.config)
+        self.warnings: list[str] = []
 
     async def retrieve_experiment_context(self, experiment_id: str) -> list[GroundingRef]:
         try:
@@ -44,19 +46,13 @@ class GroundingAdapter:
                     excerpt=f"{DEMO_NOTE} {exp.failure_observation}",
                     citation=f"data/synthetic/ml_experiment_logs.json#{experiment_id}",
                     confidence=0.82,
+                    source_system="local_demo_grounding",
+                    retrieved_at=datetime.now(timezone.utc),
                 )
             ]
         results = await self.search_client.search(experiment_id, top_k=3)
-        return [
-            GroundingRef(
-                source_type="azure_ai_search",
-                source_id=experiment_id,
-                title="Azure AI Search experiment context",
-                excerpt=str(results[0]),
-                citation=self.config.azure_ai_search_index,
-                confidence=0.7,
-            )
-        ]
+        self._capture_result_warnings(results)
+        return self._refs_from_search_results(results)
 
     async def retrieve_historical_failures(self, query: str, top_k: int = 5) -> list[GroundingRef]:
         if self.config.is_demo or not self.search_client.enabled:
@@ -69,21 +65,14 @@ class GroundingAdapter:
                     excerpt=f"{DEMO_NOTE} {hit.excerpt}",
                     citation=hit.citation,
                     confidence=hit.relevance_score,
+                    source_system="local_demo_grounding",
+                    retrieved_at=datetime.now(timezone.utc),
                 )
                 for hit in hits
             ]
         results = await self.search_client.search(query, top_k=top_k)
-        return [
-            GroundingRef(
-                source_type="azure_ai_search",
-                source_id=f"search:{index}",
-                title="Azure AI Search result",
-                excerpt=str(item),
-                citation=self.config.azure_ai_search_index,
-                confidence=0.65,
-            )
-            for index, item in enumerate(results, start=1)
-        ]
+        self._capture_result_warnings(results)
+        return self._refs_from_search_results(results)
 
     async def retrieve_remediation_playbook(self, failure_category: str) -> list[GroundingRef]:
         return await self.retrieve_historical_failures(f"{failure_category} remediation playbook", top_k=5)
@@ -93,15 +82,27 @@ class GroundingAdapter:
             return {"stored": False, "analysis_id": analysis_id, "mode": "demo", "message": DEMO_NOTE}
         return await self.cosmos_client.store_trace(analysis_id, trace)
 
-    async def build_grounding_summary(self, refs: list[GroundingRef]) -> dict:
+    async def build_grounding_summary(self, refs: list[GroundingRef], active_iq_provider: str | None = None) -> dict:
+        warnings = [] if self.config.is_demo else [*self._production_warnings(), *self.warnings]
+        azure_services_used = sorted(
+            service
+            for service, enabled in {
+                "azure_ai_search": any(ref.source_type == "azure_ai_search" for ref in refs),
+                "azure_blob_storage": self.blob_client.enabled,
+                "azure_cosmos_db": self.cosmos_client.enabled,
+            }.items()
+            if enabled
+        )
         return {
             "mode": "demo" if self.config.is_demo else "production",
+            "active_iq_provider": active_iq_provider,
             "message": DEMO_NOTE if self.config.is_demo else "Production mode uses configured Azure adapters only.",
             "enabled_integrations": self.config.enabled_integrations,
             "source_count": len(refs),
             "source_types": sorted({ref.source_type for ref in refs}),
+            "azure_services_used": azure_services_used,
             "citations": [ref.citation for ref in refs[:8]],
-            "warnings": [] if self.config.is_demo else self._production_warnings(),
+            "warnings": warnings,
         }
 
     def _production_warnings(self) -> list[str]:
@@ -110,3 +111,35 @@ class GroundingAdapter:
             if key != "local_iq" and not enabled:
                 warnings.append(f"{key} credentials are missing; that Azure integration is disabled.")
         return warnings
+
+    def _refs_from_search_results(self, results: list[dict[str, object]]) -> list[GroundingRef]:
+        refs: list[GroundingRef] = []
+        for index, item in enumerate(results, start=1):
+            if item.get("warning") and not (item.get("content") or item.get("excerpt")):
+                continue
+            score = float(item.get("score") or 0.65)
+            confidence = max(0.0, min(score, 1.0))
+            source_id = str(item.get("source_id") or item.get("chunk_id") or f"search:{index}")
+            url = str(item.get("url") or "") or None
+            citation = url or f"{self.config.azure_ai_search_index}#{source_id}"
+            refs.append(
+                GroundingRef(
+                    source_type="azure_ai_search",
+                    source_id=source_id,
+                    title=str(item.get("title") or "Azure AI Search result"),
+                    excerpt=str(item.get("content") or item.get("excerpt") or "")[:400],
+                    citation=citation,
+                    confidence=confidence,
+                    url=url,
+                    source_system="azure_ai_search",
+                    retrieved_at=datetime.now(timezone.utc),
+                    chunk_id=str(item.get("chunk_id") or "") or None,
+                )
+            )
+        return refs
+
+    def _capture_result_warnings(self, results: list[dict[str, object]]) -> None:
+        for item in results:
+            warning = item.get("warning")
+            if warning and str(warning) not in self.warnings:
+                self.warnings.append(str(warning))
