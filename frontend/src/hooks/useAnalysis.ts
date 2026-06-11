@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { experiments as mockExperiments, reasoningSteps, type Experiment } from "../data/mockData";
-import { listExperiments, runAnalysisWithOptions, runDemo } from "../api/client";
+import { API_BASE, generateReport, getCostEstimate, getHealth, getReadiness, listExperiments, runAnalysisWithOptions, runDemo } from "../api/client";
 
 export function useAnalysis(initialId = "EXP-1001") {
   const [selectedId, setSelectedId] = useState(initialId);
@@ -10,6 +10,10 @@ export function useAnalysis(initialId = "EXP-1001") {
   const [isRunning, setIsRunning] = useState(false);
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const [backendDisconnected, setBackendDisconnected] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [readiness, setReadiness] = useState<any | null>(null);
+  const [costEstimate, setCostEstimate] = useState<any | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -17,6 +21,7 @@ export function useAnalysis(initialId = "EXP-1001") {
       if (!mounted) return;
       setExperiments(result.data.items);
       setBackendDisconnected(result.disconnected);
+      setAuthRequired(result.authRequired);
     });
     return () => {
       mounted = false;
@@ -37,6 +42,8 @@ export function useAnalysis(initialId = "EXP-1001") {
     setIsRunning(true);
     const result = await runAnalysisWithOptions(selectedId);
     setBackendDisconnected(result.disconnected);
+    setAuthRequired(result.authRequired);
+    setStatusMessage(result.errorMessage || "");
     if (!result.disconnected) {
       setAnalysisResult(result.data);
     }
@@ -47,8 +54,70 @@ export function useAnalysis(initialId = "EXP-1001") {
     setIsDemoRunning(true);
     const result = await runDemo();
     setBackendDisconnected(result.disconnected);
+    setAuthRequired(result.authRequired);
+    setStatusMessage(result.errorMessage || "");
     setDemoReport(result.data);
     setIsDemoRunning(false);
+  }
+
+  async function copyDemoSummary() {
+    const summary = demoReport?.video_demo_summary || {
+      problem: "Failed ML experiments disappear after bad metrics.",
+      solution: "FailureLens IQ turns failures into reusable learning intelligence.",
+      confidence,
+      human_review_required: requiresReview
+    };
+    await navigator.clipboard.writeText(JSON.stringify(summary, null, 2));
+    setStatusMessage("Demo summary copied.");
+  }
+
+  async function downloadReport() {
+    const result = await generateReport(selectedId);
+    setBackendDisconnected(result.disconnected);
+    setAuthRequired(result.authRequired);
+    setStatusMessage(
+      result.authRequired
+        ? result.errorMessage || ""
+        : result.disconnected
+          ? "Backend is disconnected; report generation is unavailable in mock preview."
+          : `Report generated: ${(result.data as any).path || "reports"}`
+    );
+  }
+
+  async function checkBackendHealth() {
+    const result = await getHealth();
+    setBackendDisconnected(result.disconnected);
+    setAuthRequired(result.authRequired);
+    const state = result.disconnected ? "Backend is disconnected." : `Backend health: ${(result.data as any).status || "ok"}.`;
+    setStatusMessage(state);
+  }
+
+  async function checkAzureReadiness() {
+    const result = await getReadiness();
+    setBackendDisconnected(result.disconnected);
+    setAuthRequired(result.authRequired);
+    setReadiness(result.data);
+    setStatusMessage(result.disconnected ? "Backend is disconnected." : `Readiness: ${(result.data as any).status}.`);
+  }
+
+  async function checkCostEstimate() {
+    const result = await getCostEstimate();
+    setBackendDisconnected(result.disconnected);
+    setAuthRequired(result.authRequired);
+    setCostEstimate(result.data);
+    setStatusMessage(result.disconnected ? "Backend is disconnected." : "Cost estimate loaded.");
+  }
+
+  async function copyIqComplianceSummary() {
+    const summary = {
+      microsoft_iq_compliance: demoReport?.microsoft_iq_compliance,
+      azure_status: demoReport?.azure_status,
+      grounding_summary: demoReport?.grounding_summary,
+      readiness,
+      costEstimate
+    };
+    await navigator.clipboard.writeText(JSON.stringify(summary, null, 2));
+    setStatusMessage("IQ compliance summary copied.");
   }
 
   return {
@@ -61,10 +130,21 @@ export function useAnalysis(initialId = "EXP-1001") {
     isRunning,
     isDemoRunning,
     backendDisconnected,
+    authRequired,
+    statusMessage,
+    readiness,
+    costEstimate,
+    apiBase: API_BASE,
     analysisResult,
     demoReport,
     runAnalysis,
     runJudgeDemo,
+    copyDemoSummary,
+    downloadReport,
+    checkBackendHealth,
+    checkAzureReadiness,
+    checkCostEstimate,
+    copyIqComplianceSummary,
     reasoningSteps
   };
 }

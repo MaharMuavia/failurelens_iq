@@ -10,6 +10,12 @@ def test_docker_compose_has_healthchecks():
     assert "healthcheck:" in content
     assert "test:" in content
 
+def test_docker_compose_uses_demo_env_defaults():
+    content = Path("docker-compose.yml").read_text(encoding="utf-8")
+    assert ".env.demo" in content
+    assert Path(".env.demo").exists()
+    assert Path("docker-compose.prod.yml").exists()
+
 def test_app_starts_without_dotenv(monkeypatch):
     # Temporarily remove os.environ environment variables loaded from .env
     # so we simulate starting with default fallback settings

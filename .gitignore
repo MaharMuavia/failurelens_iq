@@ -8,6 +8,10 @@ dist/
 frontend/dist/
 reports/*.tmp
 .env
+.env.local
+.env.azure
 .uvicorn.pid
 .playwright-cli/
 output/
+data/uploads/*.json
+!data/uploads/.gitkeep

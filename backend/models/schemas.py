@@ -232,6 +232,9 @@ class GroundingRef(StrictModel):
     source_system: str | None = None
     retrieved_at: datetime | None = None
     chunk_id: str | None = None
+    iq_layer: str | None = None
+    retrieval_system: str | None = None
+    grounding_mode: Literal["demo", "production"] | None = None
 
 
 class ReasoningStep(StrictModel):

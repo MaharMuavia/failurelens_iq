@@ -27,4 +27,15 @@ async def health(request: Request) -> dict[str, object]:
         "auth_misconfigured": auth_misconfigured,
         "startup_loaded": app.state.startup_loaded,
         "startup_duration_ms": app.state.startup_duration_ms,
+        "microsoft_iq": {
+            "selected_layer": "Foundry IQ",
+            "provider": type(app.state.iq_provider).__name__,
+            "azure_ai_search_configured": app.state.azure_config.enabled_integrations["azure_ai_search"],
+            "azure_openai_configured": app.state.azure_config.enabled_integrations["azure_openai"],
+            "production_grounding_ready": (
+                settings.APP_MODE == "production"
+                and type(app.state.iq_provider).__name__ == "AzureFoundryIQProvider"
+                and app.state.azure_config.enabled_integrations["azure_ai_search"]
+            ),
+        },
     }

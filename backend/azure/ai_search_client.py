@@ -6,6 +6,7 @@ from urllib.parse import quote
 import httpx
 
 from backend.azure.config import AzureConfig
+from backend.core.cost_guard import clamp_search_top_k
 
 
 class AzureAISearchClient:
@@ -24,6 +25,7 @@ class AzureAISearchClient:
                     "reason": "credentials_missing",
                 }
             ]
+        top_k = clamp_search_top_k(top_k)
 
         semantic_body = {
             "search": query,
@@ -105,6 +107,7 @@ class AzureAISearchClient:
                     "url": str(item.get("url") or ""),
                     "chunk_id": str(item.get("chunk_id") or item.get("id") or ""),
                     "source_type": str(item.get("source_type") or "azure_ai_search"),
+                    "citation": str(item.get("citation") or "") or f"{self.config.azure_ai_search_index}#{str(item.get('source_id') or item.get('id') or item.get('experiment_id') or '')}",
                 }
             )
         return normalized

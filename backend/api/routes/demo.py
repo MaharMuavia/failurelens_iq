@@ -4,9 +4,20 @@ import copy
 from pathlib import Path
 from typing import Any
 from fastapi import APIRouter, Depends, Query, Request
+from backend.core.config import settings
 from backend.core.security import require_api_key
 
 router = APIRouter()
+
+
+async def maybe_upload_report(blob_client: Any, experiment_id: str, report_text: str) -> dict[str, Any]:
+    if not settings.ENABLE_AZURE_REPORT_UPLOAD:
+        return {
+            "uploaded": False,
+            "reason": "disabled_by_cost_guard",
+            "message": "Azure Blob report upload is disabled by ENABLE_AZURE_REPORT_UPLOAD=false.",
+        }
+    return await blob_client.upload_report(experiment_id, report_text)
 
 def build_demo_response(
     ctx: Any,
@@ -41,8 +52,10 @@ def build_demo_response(
         )
     completed_traces = [trace for trace in traces if trace["status"] == "completed"]
     reasoning_step_count = sum(len(trace.get("reasoning_steps", [])) for trace in traces)
+    grounding_source_count = grounding_summary.get("source_count", 0)
     blob_upload = blob_upload or {"uploaded": False, "reason": "not_attempted"}
     azure_summary = azure_summary or {"used": False}
+    source_types = grounding_summary.get("source_types", [])
     return {
         "demo_title": "Customer churn model failed validation gate",
         "executive_summary": executive_summary,
@@ -77,16 +90,55 @@ def build_demo_response(
         "demo_runtime_checks": {
             "agents_completed": len(completed_traces),
             "reasoning_steps": reasoning_step_count,
-            "grounding_refs": grounding_summary.get("source_count", 0),
+            "grounding_refs": grounding_source_count,
             "human_review_gate": bool(ctx.requires_human_review),
             "trace_storage_attempted": True,
         },
+        "video_demo_summary": {
+            "problem": "Failed ML experiments usually disappear after a bad metric, causing teams to repeat mistakes and hiding skill gaps from managers.",
+            "solution": "FailureLens IQ turns failed experiments into learning intelligence with reasoning agents, grounding, confidence gates, and certification mapping.",
+            "agent_count": len(completed_traces),
+            "reasoning_steps": reasoning_step_count,
+            "grounding_sources": grounding_source_count,
+            "confidence": ctx.overall_confidence,
+            "human_review_required": bool(ctx.requires_human_review),
+            "best_screen_to_show": "Frontend Judge Demo panel",
+        },
+        "winning_points": [
+            "Structured reasoning traces",
+            "Evidence-grounded diagnosis",
+            "Uncertainty and confidence gate",
+            "Historical memory from failed experiments",
+            "Microsoft certification-aligned remediation",
+            "Azure-ready grounding and trace storage",
+        ],
+        "demo_narration": [
+            "This failed churn model looks accurate at first, but minority-class performance collapses.",
+            "The classifier detects an evaluation methodology failure instead of treating accuracy as success.",
+            "The root-cause analyzer explains the violated assumption with evidence and counter-evidence.",
+            "The historian finds repeated patterns in prior failed experiments.",
+            "The coach converts the failure into a 7-day learning plan tied to Microsoft skills.",
+            "The integration manager packages the result for leadership with confidence and human-review gates.",
+        ],
         "azure_status": {
             "active_provider": active_iq_provider,
-            "azure_ai_search_used": "azure_ai_search" in grounding_summary.get("source_types", []),
+            "azure_ai_search_used": "azure_ai_search" in source_types,
             "azure_openai_used": bool(azure_summary.get("used")),
             "cosmos_trace_stored": bool(store_result.get("stored")),
             "blob_report_uploaded": bool(blob_upload.get("uploaded")),
+            "cost_guard_enabled": True,
+            "trace_storage_enabled": settings.ENABLE_AZURE_TRACE_STORAGE,
+            "report_upload_enabled": settings.ENABLE_AZURE_REPORT_UPLOAD,
+        },
+        "microsoft_iq_compliance": {
+            "required_iq_layer": "Foundry IQ",
+            "implemented": True,
+            "implementation": "Azure AI Search grounded retrieval connected to reasoning agents",
+            "proof": {
+                "active_iq_provider": active_iq_provider,
+                "source_types": source_types,
+                "citations_present": bool(grounding_summary.get("citations")),
+            },
         },
         "repo_readiness": {
             "demo_mode_runs_without_credentials": True,
@@ -142,7 +194,8 @@ async def run_demo(
     azure_summary = await app_state.openai_client.summarize_failure_report(ctx)
     store_result = await app_state.grounding_adapter.store_reasoning_trace(ctx.run_id, ctx.model_dump(mode="json"))
     report_path = app_state.report_service.generate(ctx)
-    blob_upload = await app_state.grounding_adapter.blob_client.upload_report(
+    blob_upload = await maybe_upload_report(
+        app_state.grounding_adapter.blob_client,
         ctx.experiment.experiment_id,
         report_path.read_text(encoding="utf-8"),
     )

@@ -289,6 +289,38 @@ h3 {
   font-weight: 800;
 }
 
+.connection-banner.danger {
+  color: #7f1d1d;
+  background: var(--red-soft);
+  border-color: #f2aaaa;
+}
+
+.connection-banner.neutral {
+  color: #284256;
+  background: #eef6ff;
+  border-color: #bfdbfe;
+}
+
+.video-demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  color: #0f3f46;
+  background: #ecfeff;
+  border: 1px solid #9be3ee;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.video-demo-banner span {
+  color: #456476;
+  font-weight: 750;
+}
+
 .stat-card,
 .panel {
   background: var(--surface);
@@ -819,10 +851,76 @@ tbody tr:hover,
   gap: 12px;
 }
 
+.demo-proof-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.agent-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.agent-mini-card {
+  min-height: 116px;
+  padding: 12px;
+  background: #f8fbfd;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.agent-mini-card span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  color: #0f4d49;
+  background: var(--teal-soft);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.agent-mini-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.agent-mini-card p,
+.video-summary-box span {
+  margin-bottom: 0;
+  color: #56697a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.video-summary-box {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+  padding: 12px;
+  background: #f8fbfd;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.video-summary-box strong {
+  color: #203345;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 @media (max-width: 1180px) {
   .dashboard-grid,
   .lower-grid,
-  .demo-grid {
+  .demo-grid,
+  .demo-proof-grid {
     grid-template-columns: 1fr;
   }
 
@@ -886,7 +984,8 @@ tbody tr:hover,
 
 @media (max-width: 560px) {
   nav,
-  .status-strip {
+  .status-strip,
+  .agent-card-grid {
     grid-template-columns: 1fr;
   }
 

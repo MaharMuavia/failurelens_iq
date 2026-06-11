@@ -1,0 +1,396 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e19]:
+        - strong [ref=e20]: FailureLens IQ
+        - generic [ref=e21]: Learning memory
+    - navigation "Primary navigation" [ref=e22]:
+      - button "Analysis" [ref=e23] [cursor=pointer]:
+        - img [ref=e24]
+        - text: Analysis
+      - button "Experiments" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+        - text: Experiments
+      - button "Manager" [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+        - text: Manager
+      - button "Knowledge" [ref=e41] [cursor=pointer]:
+        - img [ref=e42]
+        - text: Knowledge
+    - generic [ref=e44]:
+      - paragraph [ref=e45]: Retrieval mode
+      - strong [ref=e46]: local_iq_simulation
+      - text: 25 experiments indexed
+  - main [ref=e47]:
+    - generic [ref=e48]:
+      - generic [ref=e49]:
+        - paragraph [ref=e50]: Analysis workspace
+        - heading "Experiment failure intelligence" [level=1] [ref=e51]
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - img [ref=e54]
+          - textbox "Global search" [ref=e57]:
+            - /placeholder: Search runs, teams, citations
+        - button "Notifications" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+        - button "Settings" [ref=e62] [cursor=pointer]:
+          - img [ref=e63]
+    - region "FailureLens summary" [ref=e66]:
+      - article [ref=e67]:
+        - img [ref=e69]
+        - generic [ref=e71]:
+          - strong [ref=e72]: "6"
+          - paragraph [ref=e73]: failed runs
+      - article [ref=e74]:
+        - img [ref=e76]
+        - generic [ref=e78]:
+          - strong [ref=e79]: "2"
+          - paragraph [ref=e80]: human review
+      - article [ref=e81]:
+        - img [ref=e83]
+        - generic [ref=e86]:
+          - strong [ref=e87]: 81%
+          - paragraph [ref=e88]: selected confidence
+      - article [ref=e89]:
+        - img [ref=e91]
+        - generic [ref=e93]:
+          - strong [ref=e94]: "1"
+          - paragraph [ref=e95]: bias patterns
+    - generic [ref=e96]:
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - paragraph [ref=e101]: Selected run
+              - heading "EXP-1001 · Evaluation Methodology Failure" [level=2] [ref=e102]
+            - generic [ref=e103]:
+              - button "Health" [ref=e104] [cursor=pointer]:
+                - img [ref=e105]
+                - text: Health
+              - button "Copy summary" [ref=e108] [cursor=pointer]:
+                - img [ref=e109]
+                - text: Copy summary
+              - button "Report" [ref=e112] [cursor=pointer]:
+                - img [ref=e113]
+                - text: Report
+              - button "Judge Demo" [ref=e116] [cursor=pointer]:
+                - img [ref=e117]
+                - text: Judge Demo
+              - button "Run analysis" [ref=e129] [cursor=pointer]:
+                - img [ref=e130]
+                - text: Run analysis
+          - generic [ref=e132]:
+            - generic [ref=e133]:
+              - generic [ref=e134]: evaluation
+              - heading "Accuracy looked deceptive on an 88/12 class balance; minority class failures were hidden by a holdout validation report." [level=3] [ref=e135]
+              - paragraph [ref=e136]: The system links this failure to holdout evidence, baseline comparison, and team learning context for Atlas Validation.
+            - generic [ref=e137]:
+              - generic [ref=e138]:
+                - generic [ref=e139]: accuracy
+                - strong [ref=e140]: 93%
+              - generic [ref=e141]:
+                - generic [ref=e142]: minority f1
+                - strong [ref=e143]: 14%
+              - generic [ref=e144]:
+                - generic [ref=e145]: roc auc
+                - strong [ref=e146]: 72%
+        - region "Experiment triage table" [ref=e147]:
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - paragraph [ref=e150]: Experiment triage
+              - heading "Recent failure memory" [level=2] [ref=e151]
+            - generic [ref=e152]:
+              - generic [ref=e153]:
+                - img [ref=e154]
+                - textbox "Search experiments" [ref=e157]
+              - button "Sort experiments" [ref=e158] [cursor=pointer]:
+                - img [ref=e159]
+          - table [ref=e163]:
+            - rowgroup [ref=e164]:
+              - row "Experiment Team Category Stage Metric signal Gate" [ref=e165]:
+                - columnheader "Experiment" [ref=e166]
+                - columnheader "Team" [ref=e167]
+                - columnheader "Category" [ref=e168]
+                - columnheader "Stage" [ref=e169]
+                - columnheader "Metric signal" [ref=e170]
+                - columnheader "Gate" [ref=e171]
+            - rowgroup [ref=e172]:
+              - row "EXP-1001 XGBoost TEAM-A Evaluation Methodology Failure evaluation accuracy 93% / minority f1 14% failure" [ref=e173]:
+                - cell "EXP-1001 XGBoost" [ref=e174]:
+                  - button "EXP-1001 XGBoost" [ref=e175] [cursor=pointer]:
+                    - generic [ref=e176]: EXP-1001
+                    - generic [ref=e177]: XGBoost
+                - cell "TEAM-A" [ref=e178]
+                - cell "Evaluation Methodology Failure" [ref=e179]
+                - cell "evaluation" [ref=e180]
+                - cell "accuracy 93% / minority f1 14%" [ref=e181]
+                - cell "failure" [ref=e182]:
+                  - generic [ref=e183]:
+                    - img [ref=e184]
+                    - text: failure
+              - row "EXP-2001 XGBoost TEAM-B Responsible AI / Bias Failure evaluation accuracy 86% / demographic parity 41% failure" [ref=e187]:
+                - cell "EXP-2001 XGBoost" [ref=e188]:
+                  - button "EXP-2001 XGBoost" [ref=e189] [cursor=pointer]:
+                    - generic [ref=e190]: EXP-2001
+                    - generic [ref=e191]: XGBoost
+                - cell "TEAM-B" [ref=e192]
+                - cell "Responsible AI / Bias Failure" [ref=e193]
+                - cell "evaluation" [ref=e194]
+                - cell "accuracy 86% / demographic parity 41%" [ref=e195]
+                - cell "failure" [ref=e196]:
+                  - generic [ref=e197]:
+                    - img [ref=e198]
+                    - text: failure
+              - row "EXP-3001 BERT TEAM-C Deployment / Drift Failure deployment accuracy 74% / recall 46% failure" [ref=e201]:
+                - cell "EXP-3001 BERT" [ref=e202]:
+                  - button "EXP-3001 BERT" [ref=e203] [cursor=pointer]:
+                    - generic [ref=e204]: EXP-3001
+                    - generic [ref=e205]: BERT
+                - cell "TEAM-C" [ref=e206]
+                - cell "Deployment / Drift Failure" [ref=e207]
+                - cell "deployment" [ref=e208]
+                - cell "accuracy 74% / recall 46%" [ref=e209]
+                - cell "failure" [ref=e210]:
+                  - generic [ref=e211]:
+                    - img [ref=e212]
+                    - text: failure
+              - row "EXP-4001 XGBoost TEAM-D Data Quality Failure evaluation accuracy 80% / minority f1 31% failure" [ref=e215]:
+                - cell "EXP-4001 XGBoost" [ref=e216]:
+                  - button "EXP-4001 XGBoost" [ref=e217] [cursor=pointer]:
+                    - generic [ref=e218]: EXP-4001
+                    - generic [ref=e219]: XGBoost
+                - cell "TEAM-D" [ref=e220]
+                - cell "Data Quality Failure" [ref=e221]
+                - cell "evaluation" [ref=e222]
+                - cell "accuracy 80% / minority f1 31%" [ref=e223]
+                - cell "failure" [ref=e224]:
+                  - generic [ref=e225]:
+                    - img [ref=e226]
+                    - text: failure
+              - row "EXP-1002 XGBoost TEAM-A Data Leakage Failure training accuracy 96% / minority f1 88% failure" [ref=e229]:
+                - cell "EXP-1002 XGBoost" [ref=e230]:
+                  - button "EXP-1002 XGBoost" [ref=e231] [cursor=pointer]:
+                    - generic [ref=e232]: EXP-1002
+                    - generic [ref=e233]: XGBoost
+                - cell "TEAM-A" [ref=e234]
+                - cell "Data Leakage Failure" [ref=e235]
+                - cell "training" [ref=e236]
+                - cell "accuracy 96% / minority f1 88%" [ref=e237]
+                - cell "failure" [ref=e238]:
+                  - generic [ref=e239]:
+                    - img [ref=e240]
+                    - text: failure
+              - row "EXP-3002 BERT TEAM-C Feature Engineering Failure feature_engineering accuracy 73% / f1 48% failure" [ref=e243]:
+                - cell "EXP-3002 BERT" [ref=e244]:
+                  - button "EXP-3002 BERT" [ref=e245] [cursor=pointer]:
+                    - generic [ref=e246]: EXP-3002
+                    - generic [ref=e247]: BERT
+                - cell "TEAM-C" [ref=e248]
+                - cell "Feature Engineering Failure" [ref=e249]
+                - cell "feature_engineering" [ref=e250]
+                - cell "accuracy 73% / f1 48%" [ref=e251]
+                - cell "failure" [ref=e252]:
+                  - generic [ref=e253]:
+                    - img [ref=e254]
+                    - text: failure
+              - row "EXP-4006 XGBoost TEAM-D Partial evaluation accuracy 80% / minority f1 31% success" [ref=e257]:
+                - cell "EXP-4006 XGBoost" [ref=e258]:
+                  - button "EXP-4006 XGBoost" [ref=e259] [cursor=pointer]:
+                    - generic [ref=e260]: EXP-4006
+                    - generic [ref=e261]: XGBoost
+                - cell "TEAM-D" [ref=e262]
+                - cell "Partial" [ref=e263]
+                - cell "evaluation" [ref=e264]
+                - cell "accuracy 80% / minority f1 31%" [ref=e265]
+                - cell "success" [ref=e266]:
+                  - generic [ref=e267]:
+                    - img [ref=e268]
+                    - text: success
+              - row "SPARSE-001 XGBoost TEAM-D Unknown evaluation No metrics unknown" [ref=e271]:
+                - cell "SPARSE-001 XGBoost" [ref=e272]:
+                  - button "SPARSE-001 XGBoost" [ref=e273] [cursor=pointer]:
+                    - generic [ref=e274]: SPARSE-001
+                    - generic [ref=e275]: XGBoost
+                - cell "TEAM-D" [ref=e276]
+                - cell "Unknown" [ref=e277]
+                - cell "evaluation" [ref=e278]
+                - cell "No metrics" [ref=e279]
+                - cell "unknown" [ref=e280]:
+                  - generic [ref=e281]:
+                    - img [ref=e282]
+                    - text: unknown
+      - complementary [ref=e285]:
+        - region "Confidence gate" [ref=e286]:
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - paragraph [ref=e289]: Confidence gate
+              - heading "Gate passed" [level=2] [ref=e290]
+            - img [ref=e292]
+          - generic [ref=e296]: 81%
+          - generic [ref=e297]:
+            - img [ref=e298]
+            - generic [ref=e301]: Evidence strength is sufficient for diagnosis, remediation, and manager intelligence.
+        - generic [ref=e302]:
+          - generic [ref=e304]:
+            - paragraph [ref=e305]: Manager
+            - heading "TEAM-A risk summary" [level=2] [ref=e306]
+          - generic [ref=e307]:
+            - generic [ref=e308]:
+              - term [ref=e309]: Team
+              - definition [ref=e310]: Atlas Validation
+            - generic [ref=e311]:
+              - term [ref=e312]: Domain
+              - definition [ref=e313]: enterprise retention
+            - generic [ref=e314]:
+              - term [ref=e315]: Sprint load
+              - definition [ref=e316]: medium
+            - generic [ref=e317]:
+              - term [ref=e318]: Compliance
+              - definition [ref=e319]: moderate
+          - paragraph [ref=e320]: Responsible AI risk is highest for TEAM-B. Convert repeated failure categories into sprint-level review tasks and cert-aligned practice.
+    - generic [ref=e321]:
+      - region "Agent reasoning" [ref=e322]:
+        - generic [ref=e323]:
+          - generic [ref=e324]:
+            - paragraph [ref=e325]: Agent reasoning
+            - heading "Live trace" [level=2] [ref=e326]
+          - img [ref=e328]
+        - generic [ref=e330]:
+          - article [ref=e331]:
+            - img [ref=e333]
+            - generic [ref=e335]:
+              - generic [ref=e336]:
+                - strong [ref=e337]: Planner
+                - generic [ref=e338]: 72%
+              - paragraph [ref=e339]: Opened evaluation-focused plan because reported accuracy conflicts with minority-class performance.
+              - generic [ref=e340]:
+                - generic [ref=e341]: metrics.accuracy
+                - generic [ref=e342]: metrics.minority_f1
+                - generic [ref=e343]: class_balance
+          - article [ref=e344]:
+            - img [ref=e346]
+            - generic [ref=e348]:
+              - generic [ref=e349]:
+                - strong [ref=e350]: ClassifierAgent
+                - generic [ref=e351]: 79%
+              - paragraph [ref=e352]: Evaluation methodology is strongest among six rules; leakage and drift signals are not active.
+              - generic [ref=e353]:
+                - generic [ref=e354]: validation_strategy
+                - generic [ref=e355]: baseline_metrics.minority_f1
+          - article [ref=e356]:
+            - img [ref=e358]
+            - generic [ref=e360]:
+              - generic [ref=e361]:
+                - strong [ref=e362]: DiagnosticAgent
+                - generic [ref=e363]: 83%
+              - paragraph [ref=e364]: Root cause points to aggregate accuracy masking class-level regression on an imbalanced target.
+              - generic [ref=e365]:
+                - generic [ref=e366]: failure_observation
+                - generic [ref=e367]: remediation_playbook.md
+          - article [ref=e368]:
+            - img [ref=e370]
+            - generic [ref=e372]:
+              - generic [ref=e373]:
+                - strong [ref=e374]: ConfidenceGate
+                - generic [ref=e375]: 81%
+              - paragraph [ref=e376]: Confidence gate passed with moderate evidence strength and grounded citations.
+              - generic [ref=e377]:
+                - generic [ref=e378]: grounding_citations
+                - generic [ref=e379]: evidence_strength
+      - region "Evidence and citations" [ref=e380]:
+        - generic [ref=e382]:
+          - paragraph [ref=e383]: Grounded citations
+          - heading "Evidence pack" [level=2] [ref=e384]
+        - generic [ref=e385]:
+          - generic [ref=e386]:
+            - img [ref=e388]
+            - generic [ref=e391]:
+              - strong [ref=e392]: Observed failure
+              - paragraph [ref=e393]: Accuracy looked deceptive on an 88/12 class balance; minority class failures were hidden by a holdout validation report.
+          - generic [ref=e394]:
+            - img [ref=e396]
+            - generic [ref=e400]:
+              - strong [ref=e401]: Evidence fields
+              - paragraph [ref=e402]: metrics, baseline_metrics, class_balance
+          - generic [ref=e403]:
+            - img [ref=e405]
+            - generic [ref=e408]:
+              - strong [ref=e409]: Grounded citations
+              - paragraph [ref=e410]: remediation_playbook.md, ml_failure_taxonomy.md, dp100_skill_guide.md
+      - region "Knowledge search" [ref=e411]:
+        - generic [ref=e412]:
+          - generic [ref=e413]:
+            - paragraph [ref=e414]: Knowledge
+            - heading "Local IQ retrieval" [level=2] [ref=e415]
+          - img [ref=e417]
+        - generic [ref=e419]:
+          - img [ref=e420]
+          - textbox "Knowledge query" [ref=e423]: minority f1 validation
+        - generic [ref=e424]:
+          - article [ref=e425]:
+            - generic [ref=e426]:
+              - strong [ref=e427]: Imbalanced Evaluation
+              - generic [ref=e428]: 92%
+            - paragraph [ref=e429]: When accuracy rises while minority F1 falls, require stratified validation, slice metrics, and explicit class-level review before release.
+            - text: remediation_playbook.md#imbalanced-evaluation
+          - article [ref=e430]:
+            - generic [ref=e431]:
+              - strong [ref=e432]: Responsible AI / Bias Failure
+              - generic [ref=e433]: 88%
+            - paragraph [ref=e434]: Bias failures require protected attribute review, disparity checks, group error analysis, and escalation when compliance sensitivity is high.
+            - text: ml_failure_taxonomy.md#responsible-ai-bias-failure
+          - article [ref=e435]:
+            - generic [ref=e436]:
+              - strong [ref=e437]: Model Monitoring
+              - generic [ref=e438]: 81%
+            - paragraph [ref=e439]: Production drift should be connected to data freshness, feature distribution, and retraining readiness, not only model accuracy.
+            - text: dp100_skill_guide.md#model-monitoring
+    - region "Judge demo proof points" [ref=e440]:
+      - generic [ref=e441]:
+        - generic [ref=e443]:
+          - paragraph [ref=e444]: Why this is not just a classifier
+          - heading "Six reasoning agents split diagnosis from coaching and governance" [level=2] [ref=e445]
+        - generic [ref=e446]:
+          - article [ref=e447]:
+            - generic [ref=e448]: "1"
+            - strong [ref=e449]: Classifier
+            - paragraph [ref=e450]: Classifies failure mode
+          - article [ref=e451]:
+            - generic [ref=e452]: "2"
+            - strong [ref=e453]: Root cause
+            - paragraph [ref=e454]: Explains violated assumption
+          - article [ref=e455]:
+            - generic [ref=e456]: "3"
+            - strong [ref=e457]: Historian
+            - paragraph [ref=e458]: Finds repeat patterns
+          - article [ref=e459]:
+            - generic [ref=e460]: "4"
+            - strong [ref=e461]: Coach
+            - paragraph [ref=e462]: Builds remediation
+          - article [ref=e463]:
+            - generic [ref=e464]: "5"
+            - strong [ref=e465]: Certification
+            - paragraph [ref=e466]: Maps Microsoft skills
+          - article [ref=e467]:
+            - generic [ref=e468]: "6"
+            - strong [ref=e469]: Integration
+            - paragraph [ref=e470]: Packages leadership view
+      - generic [ref=e471]:
+        - generic [ref=e473]:
+          - paragraph [ref=e474]: Microsoft IQ / Azure proof
+          - heading "LocalIQProvider" [level=2] [ref=e475]
+        - generic [ref=e476]:
+          - generic [ref=e477]:
+            - term [ref=e478]: Provider
+            - definition [ref=e479]: Local demo grounding
+          - generic [ref=e480]:
+            - term [ref=e481]: Source types
+            - definition [ref=e482]: local_knowledge
+          - generic [ref=e483]:
+            - term [ref=e484]: Azure Search
+            - definition [ref=e485]: Demo fallback
+          - generic [ref=e486]:
+            - term [ref=e487]: Cosmos trace
+            - definition [ref=e488]: Credential gated
+        - paragraph [ref=e489]: Demo mode uses local grounding so judges can run it without secrets. Production mode activates Azure AI Search, Azure OpenAI, Cosmos DB, and Blob Storage only when credentials are configured.

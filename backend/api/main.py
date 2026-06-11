@@ -42,6 +42,8 @@ from backend.api.routes.demo import router as demo_router
 from backend.api.routes.knowledge import router as knowledge_router
 from backend.api.routes.manager import router as manager_router
 from backend.api.routes.report import router as report_router
+from backend.api.routes.readiness import router as readiness_router
+from backend.api.routes.cost import router as cost_router
 
 
 class AnalysisOptions(BaseModel):
@@ -254,6 +256,8 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router)
     app.include_router(manager_router)
     app.include_router(report_router)
+    app.include_router(readiness_router)
+    app.include_router(cost_router)
 
     return app
 

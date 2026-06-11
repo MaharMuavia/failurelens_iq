@@ -2,7 +2,9 @@ services:
   api:
     build: .
     env_file:
-      - .env
+      # Safe demo defaults. For production-like local runs, use:
+      # docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env up --build
+      - .env.demo
     ports:
       - "8000:8000"
     environment:
@@ -17,7 +19,7 @@ services:
   frontend:
     build: ./frontend
     env_file:
-      - .env
+      - .env.demo
     ports:
       - "5173:5173"
     environment:

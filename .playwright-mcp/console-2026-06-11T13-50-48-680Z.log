@@ -1,0 +1,7 @@
+[    1712ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5174/node_modules/.vite/deps/chunk-SVG7M4VJ.js?v=2731dbaa:21606
+[    2462ms] [ERROR] Access to fetch at 'http://localhost:8000/experiments' from origin 'http://127.0.0.1:5174' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:5174/:0
+[    2464ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8000/experiments:0
+[    2466ms] [ERROR] Access to fetch at 'http://localhost:8000/experiments' from origin 'http://127.0.0.1:5174' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:5174/:0
+[    2466ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8000/experiments:0
+[    2569ms] [ERROR] Access to fetch at 'http://localhost:8000/knowledge/search?q=minority%20f1%20validation' from origin 'http://127.0.0.1:5174' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:5174/:0
+[    2569ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8000/knowledge/search?q=minority%20f1%20validation:0

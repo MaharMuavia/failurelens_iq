@@ -33,6 +33,13 @@ class Settings(BaseModel):
     RATE_LIMIT_ENABLED: bool = Field(default=True)
     RATE_LIMIT_PER_MINUTE: int = Field(default=60)
     DEMO_CACHE_TTL_SECONDS: int = Field(default=300)
+    AZURE_MAX_DOCS_TO_INDEX: int = Field(default=200)
+    AZURE_MAX_CHUNK_CHARS: int = Field(default=1800)
+    AZURE_MAX_SEARCH_TOP_K: int = Field(default=5)
+    AZURE_OPENAI_MAX_TOKENS: int = Field(default=500)
+    AZURE_OPENAI_TEMPERATURE: float = Field(default=0.2)
+    ENABLE_AZURE_TRACE_STORAGE: bool = Field(default=False)
+    ENABLE_AZURE_REPORT_UPLOAD: bool = Field(default=False)
     
     # Paths Settings
     REPORT_OUTPUT_DIR: str = Field(default="reports")
@@ -94,6 +101,13 @@ class Settings(BaseModel):
             RATE_LIMIT_ENABLED=get_bool_env("RATE_LIMIT_ENABLED", True),
             RATE_LIMIT_PER_MINUTE=get_int_env("RATE_LIMIT_PER_MINUTE", 60),
             DEMO_CACHE_TTL_SECONDS=get_int_env("DEMO_CACHE_TTL_SECONDS", 300),
+            AZURE_MAX_DOCS_TO_INDEX=get_int_env("AZURE_MAX_DOCS_TO_INDEX", 200),
+            AZURE_MAX_CHUNK_CHARS=get_int_env("AZURE_MAX_CHUNK_CHARS", 1800),
+            AZURE_MAX_SEARCH_TOP_K=get_int_env("AZURE_MAX_SEARCH_TOP_K", 5),
+            AZURE_OPENAI_MAX_TOKENS=get_int_env("AZURE_OPENAI_MAX_TOKENS", 500),
+            AZURE_OPENAI_TEMPERATURE=float(os.getenv("AZURE_OPENAI_TEMPERATURE", "0.2") or 0.2),
+            ENABLE_AZURE_TRACE_STORAGE=get_bool_env("ENABLE_AZURE_TRACE_STORAGE", False),
+            ENABLE_AZURE_REPORT_UPLOAD=get_bool_env("ENABLE_AZURE_REPORT_UPLOAD", False),
             REPORT_OUTPUT_DIR=os.getenv("REPORT_OUTPUT_DIR", "reports").strip(),
             KNOWLEDGE_DIR=os.getenv("KNOWLEDGE_DIR", "knowledge/foundry_docs").strip(),
             UPLOAD_STORE_PATH=os.getenv("UPLOAD_STORE_PATH", "data/uploads/uploaded_experiments.json").strip(),

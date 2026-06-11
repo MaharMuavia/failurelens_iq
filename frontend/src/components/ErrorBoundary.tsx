@@ -1,4 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { API_BASE } from "../api/client";
+import { demoErrorMessage, VIDEO_DEMO_MODE } from "../config/demoMode";
 
 interface Props {
   children: ReactNode;
@@ -63,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Reload
             </button>
             <a
-              href="http://localhost:8000/health"
+              href={`${API_BASE}/health`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -79,7 +81,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Check Backend Health
             </a>
           </div>
-          {import.meta.env.DEV && this.state.error && (
+          {import.meta.env.DEV && !VIDEO_DEMO_MODE && this.state.error && (
             <pre style={{
               marginTop: "2rem",
               padding: "1rem",
@@ -90,7 +92,7 @@ export class ErrorBoundary extends Component<Props, State> {
               overflowX: "auto",
               color: "#ff7b72"
             }}>
-              {this.state.error.toString()}
+              {demoErrorMessage(this.state.error.toString())}
             </pre>
           )}
         </div>

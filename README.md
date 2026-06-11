@@ -115,6 +115,7 @@ The app exposes concise, judge-facing reasoning summaries. It does not expose hi
 ## API Endpoints
 
 - `GET /health`
+- `GET /readiness`
 - `GET /agents`
 - `GET /experiments`
 - `GET /experiments/{experiment_id}`
@@ -135,9 +136,71 @@ The React app calls the backend API through `frontend/src/api/client.ts`.
 
 If the backend is unavailable, the UI shows:
 
-`Backend disconnected: showing local mock preview.`
+`Backend disconnected: showing local mock preview. Mock preview only. Start backend for real demo.`
 
 The Judge Demo button calls `POST /demo/run` and displays the agent workflow and report summary.
+
+When `ENABLE_AUTH=true`, set `VITE_DEMO_API_KEY` so the frontend can send `X-API-Key`.
+
+## Video Demo Quick Start
+
+```powershell
+copy .env.demo .env
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn backend.api.main:app --reload --port 8000
+```
+
+In another terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`, keep browser zoom at 90% or 100%, and click `Judge Demo`.
+
+## Run Demo Without Azure
+
+Demo mode is the default and requires no Azure credentials:
+
+```powershell
+copy .env.demo .env
+docker compose up --build
+```
+
+Check:
+
+```powershell
+curl http://localhost:8000/health
+curl http://localhost:8000/readiness
+curl http://localhost:8000/agents
+curl -X POST http://localhost:8000/demo/run
+```
+
+## Run Demo With Azure Proof
+
+Copy `.env.example` to `.env`, set `APP_MODE=production`, `IQ_PROVIDER=azure_foundry`, `ENABLE_AUTH=true`, `API_KEY`, and the Azure variables for the services you want to prove. Then run:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env up --build
+```
+
+Use `/health`, `/readiness`, and `/demo/run` to show which integrations are enabled. Real Azure calls are enabled only when credentials are provided.
+
+For real Foundry IQ setup, use:
+
+```powershell
+copy .env.azure.example .env
+python scripts/azure/check_azure_env.py
+python scripts/azure/create_search_index.py
+python scripts/azure/seed_search_index.py
+python scripts/azure/test_search_query.py
+```
+
+See [AZURE_REAL_SETUP.md](docs/AZURE_REAL_SETUP.md), [FOUNDRY_IQ_COMPLIANCE.md](docs/FOUNDRY_IQ_COMPLIANCE.md), and [AZURE_COST_CONTROL.md](docs/AZURE_COST_CONTROL.md).
 
 ## Local Setup
 
@@ -160,11 +223,7 @@ Open `http://localhost:5173`.
 
 ## Docker Setup
 
-For a local demo, Docker Compose runs with demo defaults. For Azure credentials, copy the sample environment first:
-
-```powershell
-copy .env.example .env
-```
+For a local demo, Docker Compose runs with `.env.demo` by default.
 
 ```powershell
 docker compose up --build
@@ -189,6 +248,7 @@ See `docs/LIVE_AZURE_DEMO.md` for Azure AI Search index fields and live demo ver
 
 ```powershell
 curl http://localhost:8000/health
+curl http://localhost:8000/readiness
 curl -X POST http://localhost:8000/demo/run
 ```
 
@@ -204,6 +264,7 @@ Expected proof points with credentials configured:
 
 ```powershell
 curl http://localhost:8000/health
+curl http://localhost:8000/readiness
 curl http://localhost:8000/agents
 curl -X POST http://localhost:8000/demo/run
 curl -X POST http://localhost:8000/analysis/run/EXP-1001
@@ -228,6 +289,9 @@ Then open the frontend and click `Judge Demo`.
 - `grounding_summary`
 - `confidence_summary`
 - `demo_runtime_checks`
+- `video_demo_summary`
+- `winning_points`
+- `demo_narration`
 - `azure_status`
 - `repo_readiness`
 - `manager_summary`
@@ -246,7 +310,7 @@ The tests cover health contract, provider switching, Azure clients, upload persi
 
 ## Production Hardening
 
-FailureLens IQ has been audited and hardened with production-ready security and stability controls:
+FailureLens IQ has been audited and hardened with production-oriented security and stability controls:
 - **API Key Security:** Mutation endpoints are protected by `X-API-Key` headers when `ENABLE_AUTH=true`.
 - **CORS Hardening:** Origins loaded dynamically from the environment. Unsafe CORS configurations with credentials in production trigger startup failures.
 - **Denial of Service (DoS) Protections:** Cap request sizes using custom `MaxBodySizeMiddleware` and enforce simple in-memory rate limiting.
@@ -254,8 +318,38 @@ FailureLens IQ has been audited and hardened with production-ready security and 
 - **Route Refactoring:** Decoupled `main.py` into distinct, granular endpoint routers.
 - **Docker Compose Healthchecks:** Added urllib/node health checks to ensure container health.
 - **Frontend Error Boundaries:** Wrap React App with custom Error Boundary fallbacks.
+- **Readiness Endpoint:** `/readiness` reports demo readiness, production configuration gaps, and enabled Azure integrations.
 
-See [PRODUCTION_HARDENING.md](file:///c:/Users/mouav/OneDrive/Desktop/failurelens/docs/PRODUCTION_HARDENING.md) and [SECURITY_MODEL.md](file:///c:/Users/mouav/OneDrive/Desktop/failurelens/docs/SECURITY_MODEL.md) for more details.
+See [PRODUCTION_HARDENING.md](docs/PRODUCTION_HARDENING.md) and [SECURITY_MODEL.md](docs/SECURITY_MODEL.md) for more details.
+
+## Production Hardening Summary
+
+The repository is a production-hardened MVP for hackathon judging: it has API key support, safe demo defaults, CORS validation, request-size limits, rate limiting, structured logs, local persistence, Docker healthchecks, CI, and credential-gated Azure adapters.
+
+## What Is Production-Ready vs MVP
+
+Ready for the hackathon demo:
+
+- Local demo without Azure credentials
+- Judge-facing frontend flow
+- Multi-agent reasoning trace
+- Confidence and human-review gates
+- Azure integration proof when credentials exist
+
+Still MVP:
+
+- In-memory rate limiting rather than distributed throttling
+- Local JSON upload store rather than managed database persistence for all state
+- API key auth rather than Entra ID, RBAC, and tenant-aware authorization
+- Markdown report artifacts rather than a full reporting workspace
+
+## Known Enterprise Gaps
+
+- Entra ID authentication and role-based access control
+- Database-backed persistence for experiments, traces, reports, and user actions
+- Managed deployment with secrets stored in Key Vault or platform secret storage
+- Centralized observability dashboard with traces, metrics, and alerting
+- Formal data retention, audit export, and incident response procedures
 
 ## Judging Alignment
 

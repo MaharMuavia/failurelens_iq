@@ -1,24 +1,51 @@
 import { experiments, knowledgeHits, type Experiment } from "../data/mockData";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const DEMO_API_KEY = import.meta.env.VITE_DEMO_API_KEY || "";
 
 export type ApiState<T> = {
   data: T;
   disconnected: boolean;
+  authRequired: boolean;
+  status?: number;
+  errorMessage?: string;
 };
+
+function authHeaders(): Record<string, string> {
+  return DEMO_API_KEY ? { "X-API-Key": DEMO_API_KEY } : {};
+}
 
 async function request<T>(path: string, fallback: T, init?: RequestInit): Promise<ApiState<T>> {
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+      ...((init?.headers || {}) as Record<string, string>)
+    };
     const response = await fetch(`${API_BASE}${path}`, {
-      headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
-      ...init
+      ...init,
+      headers
     });
+    if (response.status === 401) {
+      return {
+        data: fallback,
+        disconnected: false,
+        authRequired: true,
+        status: response.status,
+        errorMessage: "API key required. Set VITE_DEMO_API_KEY in frontend environment."
+      };
+    }
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`);
     }
-    return { data: (await response.json()) as T, disconnected: false };
-  } catch {
-    return { data: fallback, disconnected: true };
+    return { data: (await response.json()) as T, disconnected: false, authRequired: false, status: response.status };
+  } catch (error) {
+    return {
+      data: fallback,
+      disconnected: true,
+      authRequired: false,
+      errorMessage: error instanceof Error ? error.message : "Backend disconnected"
+    };
   }
 }
 
@@ -42,6 +69,14 @@ export function getHealth() {
 
 export function getAgents() {
   return request("/agents", []);
+}
+
+export function getReadiness() {
+  return request("/readiness", { status: "demo_ready", score: 0, checks: {}, recommendations: [] });
+}
+
+export function getCostEstimate() {
+  return request("/cost/estimate", { azure_openai: { cost_guard_enabled: true }, recommendations: [] });
 }
 
 export function listExperiments() {
@@ -93,4 +128,4 @@ export function generateReport(experimentId: string) {
   return request(`/report/${encodeURIComponent(experimentId)}/generate`, {}, { method: "POST" });
 }
 
-export { API_BASE };
+export { API_BASE, DEMO_API_KEY, authHeaders };

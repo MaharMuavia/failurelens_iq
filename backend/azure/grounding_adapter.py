@@ -7,6 +7,7 @@ from backend.azure.ai_search_client import AzureAISearchClient
 from backend.azure.blob_client import AzureBlobClient
 from backend.azure.config import AzureConfig, load_azure_config
 from backend.azure.cosmos_client import AzureCosmosTraceClient
+from backend.core.config import settings
 from backend.models.schemas import GroundingRef
 from backend.services.knowledge_index import KnowledgeIndex
 from backend.utils.data_loader import DataLoader
@@ -48,6 +49,9 @@ class GroundingAdapter:
                     confidence=0.82,
                     source_system="local_demo_grounding",
                     retrieved_at=datetime.now(timezone.utc),
+                    iq_layer="Foundry IQ",
+                    retrieval_system="Local demo grounding",
+                    grounding_mode="demo",
                 )
             ]
         results = await self.search_client.search(experiment_id, top_k=3)
@@ -67,6 +71,9 @@ class GroundingAdapter:
                     confidence=hit.relevance_score,
                     source_system="local_demo_grounding",
                     retrieved_at=datetime.now(timezone.utc),
+                    iq_layer="Foundry IQ",
+                    retrieval_system="Local demo grounding",
+                    grounding_mode="demo",
                 )
                 for hit in hits
             ]
@@ -80,6 +87,14 @@ class GroundingAdapter:
     async def store_reasoning_trace(self, analysis_id: str, trace: dict) -> dict:
         if self.config.is_demo:
             return {"stored": False, "analysis_id": analysis_id, "mode": "demo", "message": DEMO_NOTE}
+        if not settings.ENABLE_AZURE_TRACE_STORAGE:
+            return {
+                "stored": False,
+                "analysis_id": analysis_id,
+                "mode": "production",
+                "reason": "disabled_by_cost_guard",
+                "message": "Azure Cosmos trace storage is disabled by ENABLE_AZURE_TRACE_STORAGE=false.",
+            }
         return await self.cosmos_client.store_trace(analysis_id, trace)
 
     async def build_grounding_summary(self, refs: list[GroundingRef], active_iq_provider: str | None = None) -> dict:
@@ -102,6 +117,9 @@ class GroundingAdapter:
             "source_types": sorted({ref.source_type for ref in refs}),
             "azure_services_used": azure_services_used,
             "citations": [ref.citation for ref in refs[:8]],
+            "citations_count": len([ref for ref in refs if ref.citation]),
+            "iq_layer": "Foundry IQ",
+            "retrieval_system": "Azure AI Search" if any(ref.source_type == "azure_ai_search" for ref in refs) else "Local demo grounding",
             "warnings": warnings,
         }
 
@@ -121,7 +139,7 @@ class GroundingAdapter:
             confidence = max(0.0, min(score, 1.0))
             source_id = str(item.get("source_id") or item.get("chunk_id") or f"search:{index}")
             url = str(item.get("url") or "") or None
-            citation = url or f"{self.config.azure_ai_search_index}#{source_id}"
+            citation = str(item.get("citation") or "") or url or f"{self.config.azure_ai_search_index}#{source_id}"
             refs.append(
                 GroundingRef(
                     source_type="azure_ai_search",
@@ -134,6 +152,9 @@ class GroundingAdapter:
                     source_system="azure_ai_search",
                     retrieved_at=datetime.now(timezone.utc),
                     chunk_id=str(item.get("chunk_id") or "") or None,
+                    iq_layer="Foundry IQ",
+                    retrieval_system="Azure AI Search",
+                    grounding_mode="production",
                 )
             )
         return refs
