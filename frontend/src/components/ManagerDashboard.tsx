@@ -21,6 +21,7 @@ import { ConfidenceMeter } from "./ConfidenceMeter";
 import { EvidenceTable } from "./EvidenceTable";
 import { ExperimentTable } from "./ExperimentTable";
 import { KnowledgeSearch } from "./KnowledgeSearch";
+import { MicrosoftIQProofPanel } from "./MicrosoftIQProofPanel";
 import { ReasoningPanel } from "./ReasoningPanel";
 import { teamProfiles } from "../data/mockData";
 import { VIDEO_DEMO_MODE } from "../config/demoMode";
@@ -292,59 +293,29 @@ export function ManagerDashboard({
                 </div>
               </section>
 
-              <section className="panel">
+              <MicrosoftIQProofPanel
+                iqStatus={analysis.iqStatus}
+                readiness={analysis.readiness}
+                demoReport={analysis.demoReport}
+                onCopy={analysis.copyIqComplianceSummary}
+              />
+            </section>
+            {analysis.costEstimate && (
+              <section className="panel cost-guard-panel" style={{ marginTop: "16px" }}>
                 <div className="panel-title-row">
                   <div>
-                    <p className="eyebrow">Microsoft IQ / Foundry Proof</p>
-                    <h2>{analysis.demoReport?.microsoft_iq_compliance?.required_iq_layer || "Foundry IQ"}</h2>
+                    <p className="eyebrow">Cost guard</p>
+                    <h2>Demo usage limits</h2>
                   </div>
                 </div>
-                <dl className="manager-list">
-                  <div>
-                    <dt>Selected IQ Layer</dt>
-                    <dd>{analysis.demoReport?.microsoft_iq_compliance?.required_iq_layer || "Foundry IQ"}</dd>
-                  </div>
-                  <div>
-                    <dt>Active Provider</dt>
-                    <dd>{analysis.demoReport?.azure_status?.active_provider || "Local demo grounding"}</dd>
-                  </div>
-                  <div>
-                    <dt>Azure AI Search</dt>
-                    <dd>{analysis.demoReport?.azure_status?.azure_ai_search_used || analysis.readiness?.checks?.azure_ai_search_configured ? "Enabled" : "Disabled"}</dd>
-                  </div>
-                  <div>
-                    <dt>Azure OpenAI</dt>
-                    <dd>{analysis.demoReport?.azure_status?.azure_openai_used || analysis.readiness?.checks?.azure_openai_configured ? "Enabled" : "Disabled"}</dd>
-                  </div>
-                  <div>
-                    <dt>Grounding Source Types</dt>
-                    <dd>{(analysis.demoReport?.grounding_summary?.source_types || ["local_knowledge"]).join(", ")}</dd>
-                  </div>
-                  <div>
-                    <dt>Citations Count</dt>
-                    <dd>{analysis.demoReport?.grounding_summary?.citations_count ?? analysis.demoReport?.grounding_summary?.citations?.length ?? 0}</dd>
-                  </div>
-                  <div>
-                    <dt>Mode</dt>
-                    <dd>{analysis.demoReport?.grounding_summary?.mode || analysis.readiness?.status || "demo"}</dd>
-                  </div>
-                  <div>
-                    <dt>Compliance</dt>
-                    <dd>{analysis.demoReport?.microsoft_iq_compliance?.proof?.citations_present ? "Passed" : "Needs Azure Config"}</dd>
-                  </div>
-                </dl>
                 {analysis.costEstimate && (
                   <p className="manager-note">
                     Cost guard: max {(analysis.costEstimate as any).azure_openai?.max_tokens_per_demo || 500} tokens per demo;
                     Search top-k capped at {(analysis.costEstimate as any).limits?.max_search_top_k || 5}.
                   </p>
                 )}
-                <p className="manager-note">
-                  Demo mode uses local grounding so judges can run it without secrets. Production mode activates Azure AI Search,
-                  Azure OpenAI, Cosmos DB, and Blob Storage only when credentials are configured.
-                </p>
               </section>
-            </section>
+            )}
 
             {analysis.demoReport && (
               <section className="panel demo-summary" aria-label="Judge demo report" style={{ marginTop: "24px" }}>

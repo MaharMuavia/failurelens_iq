@@ -31,6 +31,12 @@ jobs:
       - name: Check README for local file links
         run: python -c "from pathlib import Path; text=Path('README.md').read_text(encoding='utf-8'); assert 'file:///' not in text"
 
+      - name: Verify architecture diagram exists
+        run: python -c "from pathlib import Path; assert Path('docs/ARCHITECTURE_DIAGRAM.md').exists(); assert Path('docs/architecture-diagram.mmd').exists()"
+
+      - name: Verify video demo docs exist
+        run: python -c "from pathlib import Path; required=['docs/VIDEO_DEMO_SCRIPT.md','docs/VIDEO_DEMO_CHECKLIST.md','docs/JUDGE_QA.md','docs/DEMO_COMMANDS.md','docs/SUBMISSION_CHECKLIST.md']; missing=[p for p in required if not Path(p).exists()]; assert not missing, missing"
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:

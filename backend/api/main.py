@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-import json
 import os
 import time
 from pathlib import Path
@@ -10,14 +8,12 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
 from backend.azure.config import load_azure_config
 from backend.azure.grounding_adapter import GroundingAdapter
 from backend.azure.openai_client import AzureOpenAIClient
 from backend.core.orchestrator import Orchestrator
-from backend.models.enums import RetrievalMode
-from backend.models.schemas import ExperimentLog
 from backend.services.azure_foundry_iq_provider import AzureFoundryIQProvider
 from backend.services.knowledge_index import KnowledgeIndex
 from backend.services.local_iq_provider import LocalIQProvider
@@ -45,6 +41,7 @@ from backend.api.routes.manager import router as manager_router
 from backend.api.routes.report import router as report_router
 from backend.api.routes.readiness import router as readiness_router
 from backend.api.routes.cost import router as cost_router
+from backend.api.routes.iq_status import router as iq_status_router
 
 
 JUDGE_AGENTS = [
@@ -162,7 +159,7 @@ def create_app_state_for_tests() -> dict[str, Any]:
         "demo_cache": DemoCache(),
         "uploaded_experiments": {}, # Mirror for backward compatibility
         "startup_loaded": _STARTUP_LOADED,
-        "startup_duration_ms": _STARTUP_duration_ms if "_STARTUP_duration_ms" in locals() else _STARTUP_DURATION_MS,
+        "startup_duration_ms": _STARTUP_DURATION_MS,
         "settings": settings,
     }
     
@@ -242,6 +239,9 @@ def create_app() -> FastAPI:
 
     # Register Routers
     app.include_router(health_router)
+    app.include_router(readiness_router)
+    app.include_router(cost_router)
+    app.include_router(iq_status_router)
     app.include_router(agents_router)
     app.include_router(experiments_router)
     app.include_router(analysis_router)
@@ -249,8 +249,6 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router)
     app.include_router(manager_router)
     app.include_router(report_router)
-    app.include_router(readiness_router)
-    app.include_router(cost_router)
 
     return app
 

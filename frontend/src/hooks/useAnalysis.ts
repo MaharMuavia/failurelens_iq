@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { experiments as mockExperiments, reasoningSteps, type Experiment } from "../data/mockData";
-import { API_BASE, generateReport, getCostEstimate, getHealth, getReadiness, listExperiments, runAnalysisWithOptions, runDemo } from "../api/client";
+import { API_BASE, generateReport, getCostEstimate, getHealth, getIQStatus, getReadiness, listExperiments, runAnalysisWithOptions, runDemo } from "../api/client";
 
 export function useAnalysis(initialId = "EXP-1001") {
   const [selectedId, setSelectedId] = useState(initialId);
@@ -13,6 +13,7 @@ export function useAnalysis(initialId = "EXP-1001") {
   const [authRequired, setAuthRequired] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [readiness, setReadiness] = useState<any | null>(null);
+  const [iqStatus, setIQStatus] = useState<any | null>(null);
   const [costEstimate, setCostEstimate] = useState<any | null>(null);
 
   useEffect(() => {
@@ -52,11 +53,13 @@ export function useAnalysis(initialId = "EXP-1001") {
 
   async function runJudgeDemo() {
     setIsDemoRunning(true);
-    const result = await runDemo();
-    setBackendDisconnected(result.disconnected);
-    setAuthRequired(result.authRequired);
-    setStatusMessage(result.errorMessage || "");
-    setDemoReport(result.data);
+    const [iqResult, readinessResult, demoResult] = await Promise.all([getIQStatus(), getReadiness(), runDemo()]);
+    setBackendDisconnected(iqResult.disconnected || readinessResult.disconnected || demoResult.disconnected);
+    setAuthRequired(iqResult.authRequired || readinessResult.authRequired || demoResult.authRequired);
+    setStatusMessage(demoResult.errorMessage || readinessResult.errorMessage || iqResult.errorMessage || "");
+    setIQStatus(iqResult.data);
+    setReadiness(readinessResult.data);
+    setDemoReport(demoResult.data);
     setIsDemoRunning(false);
   }
 
@@ -93,11 +96,12 @@ export function useAnalysis(initialId = "EXP-1001") {
   }
 
   async function checkAzureReadiness() {
-    const result = await getReadiness();
-    setBackendDisconnected(result.disconnected);
-    setAuthRequired(result.authRequired);
-    setReadiness(result.data);
-    setStatusMessage(result.disconnected ? "Backend is disconnected." : `Readiness: ${(result.data as any).status}.`);
+    const [readinessResult, iqResult] = await Promise.all([getReadiness(), getIQStatus()]);
+    setBackendDisconnected(readinessResult.disconnected || iqResult.disconnected);
+    setAuthRequired(readinessResult.authRequired || iqResult.authRequired);
+    setReadiness(readinessResult.data);
+    setIQStatus(iqResult.data);
+    setStatusMessage(readinessResult.disconnected ? "Backend is disconnected." : `Readiness: ${(readinessResult.data as any).status}.`);
   }
 
   async function checkCostEstimate() {
@@ -111,6 +115,7 @@ export function useAnalysis(initialId = "EXP-1001") {
   async function copyIqComplianceSummary() {
     const summary = {
       microsoft_iq_compliance: demoReport?.microsoft_iq_compliance,
+      iqStatus,
       azure_status: demoReport?.azure_status,
       grounding_summary: demoReport?.grounding_summary,
       readiness,
@@ -133,6 +138,7 @@ export function useAnalysis(initialId = "EXP-1001") {
     authRequired,
     statusMessage,
     readiness,
+    iqStatus,
     costEstimate,
     apiBase: API_BASE,
     analysisResult,

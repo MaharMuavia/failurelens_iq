@@ -18,7 +18,7 @@ class Settings(BaseModel):
     LOG_LEVEL: str = Field(default="INFO")
     
     # CORS Settings
-    CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"])
+    CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"])
     CORS_ALLOW_CREDENTIALS: bool = Field(default=True)
     CORS_ALLOW_METHODS: list[str] = Field(default_factory=lambda: ["*"])
     CORS_ALLOW_HEADERS: list[str] = Field(default_factory=lambda: ["*"])
@@ -68,7 +68,7 @@ class Settings(BaseModel):
         if cors_str:
             cors_origins = [orig.strip() for orig in cors_str.split(",") if orig.strip()]
         else:
-            cors_origins = ["http://localhost:5173", "http://localhost:3000"]
+            cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
             
         def get_bool_env(name: str, default: bool) -> bool:
             val = os.getenv(name)

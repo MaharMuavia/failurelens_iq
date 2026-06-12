@@ -33,6 +33,7 @@ vi.mock("../api/client", () => {
     }),
     getHealth: vi.fn(),
     getReadiness: vi.fn(),
+    getIQStatus: vi.fn(),
     getCostEstimate: vi.fn(),
     runDemo: vi.fn(),
     listExperimentsSync: vi.fn(),

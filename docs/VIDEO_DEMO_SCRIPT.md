@@ -1,32 +1,25 @@
-# FailureLens IQ Video Demo Script
+# FailureLens IQ 2-Minute Video Demo Script
 
-## 0:00-0:20 Problem
+## 0:00-0:15 Problem
 
-Failed ML experiments usually disappear after a bad metric. Teams repeat the same mistakes because the evidence is not turned into reusable memory. Managers also cannot see whether failures point to skill gaps, process gaps, or responsible AI risk.
+Failed ML experiments disappear, and teams repeat mistakes. A failed model often becomes a forgotten metric instead of a reusable lesson.
 
-## 0:20-0:50 Solution
+## 0:15-0:35 Solution
 
-FailureLens IQ turns failures into learning intelligence. It uses six reasoning agents, local or Azure grounding, confidence gates, human-review flags, and Microsoft certification mapping to convert a failed experiment into an evidence-backed remediation plan.
+FailureLens IQ turns failures into learning intelligence using reasoning agents. It classifies the failure, explains root cause, finds historical patterns, recommends remediation, and maps the gap to Microsoft learning readiness.
 
-## 0:50-1:30 Live Demo
+## 0:35-1:10 Demo
 
-Show the frontend dashboard and click `Judge Demo`.
+Click Judge Demo. Show the classification, root cause, historian, remediation, and certification readiness sections. Point out that six agents split diagnosis, historical memory, coaching, certification mapping, and manager reporting.
 
-Call out:
+## 1:10-1:35 Reasoning
 
-- Classification: evaluation methodology failure.
-- Root cause: aggregate accuracy masked minority-class weakness.
-- Historian: repeated pattern from prior failed experiments.
-- Remediation: 3-day and 7-day coaching plan.
-- Certification readiness: Microsoft skill-domain mapping.
-- Manager summary: leadership-ready risk and action view.
+Show the reasoning trace with evidence, uncertainty, confidence, and the human review gate. Explain that the app exposes structured audit traces, not hidden chain-of-thought.
 
-## 1:30-2:05 Microsoft IQ / Azure Proof
+## 1:35-1:50 Microsoft IQ
 
-Show `/health` and `/readiness`.
+Show the Microsoft IQ Proof panel. Say: "For the Microsoft IQ requirement, FailureLens IQ implements Foundry IQ using Azure AI Search as the grounded retrieval layer for the agents."
 
-Explain that demo mode uses local grounding so judges can run it without secrets. In production mode, the same adapter boundary can use Azure AI Search for grounding, Azure OpenAI for report summarization, Azure Cosmos DB for reasoning traces, and Azure Blob Storage for report artifacts when credentials exist.
+## 1:50-2:00 Closing
 
-## 2:05-2:30 Why It Wins
-
-FailureLens IQ is more than a dashboard. It shows structured reasoning traces, uncertainty, evidence, confidence gates, human review, enterprise reporting, and a learning outcome tied to Microsoft certification readiness.
+"This is not just a classifier. It is an enterprise learning memory system for failed ML experiments."

@@ -916,6 +916,62 @@ tbody tr:hover,
   line-height: 1.45;
 }
 
+.microsoft-iq-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.iq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.iq-badge.live {
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid #a8e8bf;
+}
+
+.iq-badge.fallback {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid #f4cf73;
+}
+
+.iq-badge.danger {
+  color: var(--red);
+  background: var(--red-soft);
+  border: 1px solid #f2aaaa;
+}
+
+.iq-explanation {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  padding: 11px;
+  color: #365265;
+  background: #f8fbfd;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.iq-explanation p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.iq-copy-button {
+  width: 100%;
+}
+
 @media (max-width: 1180px) {
   .dashboard-grid,
   .lower-grid,
