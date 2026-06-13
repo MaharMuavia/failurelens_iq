@@ -301,3 +301,21 @@ scripts/
 tests/
   backend and repository contract tests
 ```
+
+## Submission Status
+
+**DEMO-READY MVP WITH AZURE PRODUCTION ADAPTERS**
+
+FailureLens IQ runs in demo mode without secrets using a local Foundry IQ-compatible adapter. Production Azure adapters are included for Azure AI Search, Azure Blob Storage, Cosmos DB, and Foundry/OpenAI model routing when valid credentials are provided.
+
+OpenAI direct API does not replace Microsoft IQ. Direct OpenAI reasoning is only an optional fallback for model reasoning; Microsoft IQ compliance is based on the grounding layer, citations, source types, and proof status.
+
+See `docs/PRODUCTION_HARDENING.md` for production deployment hardening notes.
+
+## Required Submission Documents
+
+- `docs/PRODUCTION_HARDENING.md`
+- `docs/SECURITY_MODEL.md`
+- `docs/MICROSOFT_IQ_HONEST_COMPLIANCE.md`
+
+Real Azure calls are enabled only when credentials are provided.

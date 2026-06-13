@@ -1,3 +1,8 @@
+const VITE_DEMO_API_KEY = import.meta.env.VITE_DEMO_API_KEY;
+
+export function demoApiKeyHeaders(): Record<string, string> {
+  return VITE_DEMO_API_KEY ? { "X-API-Key": VITE_DEMO_API_KEY } : {};
+}
 export interface Experiment {
   id: string;
   project: string;
@@ -771,3 +776,5 @@ export function getProofStatus() { return ApiClient.getProofStatus(); }
 export function runProofCheck() { return ApiClient.runProofCheck(); }
 export function getLiveIQProof() { return ApiClient.getLiveIQProof(); }
 export function runLiveIQProof() { return ApiClient.runLiveIQProof(); }
+
+
