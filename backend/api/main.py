@@ -45,6 +45,7 @@ from backend.api.routes.readiness import router as readiness_router
 from backend.api.routes.cost import router as cost_router
 from backend.api.routes.iq_status import router as iq_status_router
 from backend.api.routes.proof import router as proof_router
+from backend.api.routes.analyze import router as analyze_router
 
 
 JUDGE_AGENTS = [
@@ -331,6 +332,7 @@ def create_app() -> FastAPI:
     app.include_router(iq_status_router)
     app.include_router(agents_router)
     app.include_router(experiments_router)
+    app.include_router(analyze_router)
     app.include_router(analysis_router)
     app.include_router(demo_router)
     app.include_router(knowledge_router)

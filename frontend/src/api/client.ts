@@ -4,7 +4,11 @@ export interface Experiment {
   modelType: string;
   category: string;
   confidence: number;
-  iqMode: 'offline-mock' | 'local-foundry' | 'foundry-live' | 'azure-live';
+  iqMode: 'offline_mock_preview' | 'local_client_simulation' | 'local_foundry_iq_adapter' | 'live_azure_foundry';
+  is_live_backend: boolean;
+  is_live_microsoft_iq: boolean;
+  proof_level: 'offline_mock_preview' | 'local_client_simulation' | 'local_foundry_iq_adapter' | 'foundry_model_live_without_search' | 'azure_search_live_with_local_reasoning' | 'live_azure_foundry';
+  warning: string;
   humanReview: 'Approved' | 'Requires Audit' | 'Pending Review';
   created: string;
   summary: string;
@@ -47,7 +51,10 @@ export interface Report {
   certification: string;
 }
 
-// Fallback Mock Data for Offline Mode
+const OFFLINE_WARNING = "Offline Mock Preview — not live submission proof.";
+
+// Fallback data for offline mode. These records are intentionally labeled as
+// synthetic client previews and must never imply live Microsoft proof.
 export const MOCK_EXPERIMENTS: Experiment[] = [
   {
     id: "EXP-1001",
@@ -55,7 +62,11 @@ export const MOCK_EXPERIMENTS: Experiment[] = [
     modelType: "XGBoost Classifier",
     category: "Class Imbalance Bias",
     confidence: 84,
-    iqMode: "local-foundry",
+    iqMode: "offline_mock_preview",
+    is_live_backend: false,
+    is_live_microsoft_iq: false,
+    proof_level: "offline_mock_preview",
+    warning: OFFLINE_WARNING,
     humanReview: "Pending Review",
     created: "2026-06-10",
     summary: "Our churn model achieved 93% accuracy, but minority class F1 dropped to 0.14. Dataset is 88/12 imbalanced and validation used a simple holdout split.",
@@ -84,7 +95,11 @@ export const MOCK_EXPERIMENTS: Experiment[] = [
     modelType: "Random Forest Regressor",
     category: "Target Leakage",
     confidence: 92,
-    iqMode: "azure-live",
+    iqMode: "local_client_simulation",
+    is_live_backend: false,
+    is_live_microsoft_iq: false,
+    proof_level: "offline_mock_preview",
+    warning: OFFLINE_WARNING,
     humanReview: "Approved",
     created: "2026-06-11",
     summary: "Validation accuracy jumped to 98% after adding renewal_status_after_30d, but live test performance completely collapsed. Suspect temporal feature leakage.",
@@ -112,7 +127,11 @@ export const MOCK_EXPERIMENTS: Experiment[] = [
     modelType: "Deep Feedforward Network",
     category: "Ethical & Demographic Disparate Impact",
     confidence: 79,
-    iqMode: "foundry-live",
+    iqMode: "local_client_simulation",
+    is_live_backend: false,
+    is_live_microsoft_iq: false,
+    proof_level: "offline_mock_preview",
+    warning: OFFLINE_WARNING,
     humanReview: "Requires Audit",
     created: "2026-06-12",
     summary: "Loan approval model has strong overall AUC but approval errors are much higher for a protected demographic subgroup.",
@@ -243,25 +262,60 @@ export const MOCK_REPORTS: Report[] = [
   }
 ];
 
-const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== "undefined"
-    ? window.location.port
-      ? window.location.origin.replace(/:\d+$/, ":8000")
-      : `${window.location.origin}:8000`
-    : "") ||
-  DEFAULT_API_BASE;
+const CONFIGURED_API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+function normalizeProofLevel(level?: string): Experiment["proof_level"] {
+  const allowed: Experiment["proof_level"][] = [
+    "offline_mock_preview",
+    "local_client_simulation",
+    "local_foundry_iq_adapter",
+    "foundry_model_live_without_search",
+    "azure_search_live_with_local_reasoning",
+    "live_azure_foundry",
+  ];
+  return allowed.includes(level as Experiment["proof_level"])
+    ? (level as Experiment["proof_level"])
+    : "local_foundry_iq_adapter";
+}
+
+function experimentFromPromptResponse(raw: any): Experiment {
+  const analysis = raw?.analysis_result || raw;
+  const generated = raw?.generated_experiment || {};
+  const classification = analysis?.failure_classification || {};
+  const diagnosis = analysis?.root_cause_analysis || {};
+  const remediation = analysis?.remediation_plan || {};
+  const compliance = analysis?.microsoft_iq_compliance || {};
+  const proofLevel = normalizeProofLevel(compliance?.proof_level || analysis?.proof_level);
+  const isLiveIq = Boolean(compliance?.live_microsoft_iq || analysis?.live_microsoft_iq);
+  const warning = analysis?.honest_limitation || compliance?.honest_limitation || "";
+
+  return {
+    id: raw?.prompt_id || generated?.experiment_id || analysis?.run_id || `EXP-${Date.now()}`,
+    project: generated?.project_name || analysis?.demo_title || "Prompt-generated experiment",
+    modelType: generated?.model_type || "Model from prompt",
+    category: String(classification?.failure_category || generated?.failure_category_label || "Unclassified"),
+    confidence: Math.round(Number(analysis?.confidence_summary?.overall_confidence || classification?.confidence || 0.8) * 100),
+    iqMode: isLiveIq ? "live_azure_foundry" : "local_foundry_iq_adapter",
+    is_live_backend: true,
+    is_live_microsoft_iq: isLiveIq,
+    proof_level: proofLevel,
+    warning,
+    humanReview: analysis?.confidence_summary?.requires_human_review ? "Requires Audit" : "Pending Review",
+    created: new Date().toISOString().split("T")[0],
+    summary: generated?.failure_observation || raw?.original_prompt || "Prompt analysis completed.",
+    rootCause: diagnosis?.root_cause || "Root cause was not returned by the backend.",
+    recommendedFixes: remediation?.three_day_plan || remediation?.seven_day_plan || [],
+    evidence: diagnosis?.evidence || analysis?.reasoning_timeline?.flatMap((trace: any) => trace.key_evidence || []) || [],
+    reasoningSteps: (analysis?.reasoning_timeline || []).map((trace: any) => `${trace.agent_name || trace.agent}: ${trace.findings?.[0] || trace.status}`),
+    certificationMapping: analysis?.certification_readiness?.mapping?.recommended_cert || "Certification mapping unavailable.",
+  };
+}
 
 export class ApiClient {
   private static isBackendOffline = false;
 
   private static async request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    let cleanPath = path;
-    if (cleanPath.startsWith("/api/")) {
-      cleanPath = cleanPath.substring(4); // Keep leading slash, e.g. "/health" instead of "/api/health"
-    }
-    const url = `${API_BASE}${cleanPath}`;
+    const url = this.buildUrl(path);
     try {
       const res = await fetch(url, {
         ...options,
@@ -282,6 +336,17 @@ export class ApiClient {
     }
   }
 
+  private static buildUrl(path: string): string {
+    if (!CONFIGURED_API_BASE) {
+      return path;
+    }
+    let backendPath = path;
+    if (backendPath.startsWith("/api/")) {
+      backendPath = backendPath.substring(4);
+    }
+    return `${CONFIGURED_API_BASE}${backendPath}`;
+  }
+
   static getOfflineStatus(): boolean {
     return this.isBackendOffline;
   }
@@ -290,7 +355,7 @@ export class ApiClient {
     try {
       return await this.request<{ status: string; timestamp: string }>("/api/health");
     } catch {
-      return { status: "offline-mock", timestamp: new Date().toISOString() };
+      return { status: "offline_mock_preview", timestamp: new Date().toISOString() };
     }
   }
 
@@ -298,11 +363,20 @@ export class ApiClient {
     try {
       return await this.request<{ ready: boolean }>("/api/readiness");
     } catch {
-      return { ready: true };
+      return { ready: false };
     }
   }
 
-  static async getIQStatus(): Promise<{ status: string; provider: string; iq_mode: string; live_search: boolean; citations_count: number }> {
+  static async getIQStatus(): Promise<{
+    status: string;
+    provider: string;
+    iq_mode: string;
+    live_search: boolean;
+    citations_count: number;
+    proof_level?: string;
+    foundry_model_live?: boolean;
+    azure_ai_search_configured?: boolean;
+  }> {
     try {
       const raw = await this.request<any>("/api/iq/status");
       return {
@@ -310,13 +384,16 @@ export class ApiClient {
         provider: raw.active_provider || raw.provider || "Local Foundry IQ Adapter",
         iq_mode: raw.foundry_iq_mode || raw.iq_mode || "Local Mode (No Azure Grounding Connection)",
         live_search: raw.live_microsoft_iq || raw.live_search || false,
-        citations_count: raw.citations_supported ? 14 : 3
+        citations_count: raw.citations_supported ? 14 : 3,
+        proof_level: raw.proof_level,
+        foundry_model_live: Boolean(raw.live_microsoft_foundry_model),
+        azure_ai_search_configured: Boolean(raw.azure_ai_search_ready_or_active || raw.live_services?.azure_ai_search_configured),
       };
     } catch {
       return {
-        status: "local-simulation",
-        provider: "Local Foundry IQ Adapter",
-        iq_mode: "Local Mode (No Azure Grounding Connection)",
+        status: "backend_offline",
+        provider: "Backend Offline",
+        iq_mode: "offline_mock_preview",
         live_search: false,
         citations_count: 3
       };
@@ -337,7 +414,11 @@ export class ApiClient {
           modelType: item.modelType || item.model || "XGBoost Classifier",
           category: item.category || item.failure_category || "Unclassified",
           confidence: item.confidence || Math.round(item.test_accuracy * 100) || 85,
-          iqMode: item.iqMode || "local-foundry",
+          iqMode: item.iqMode || "local_foundry_iq_adapter",
+          is_live_backend: true,
+          is_live_microsoft_iq: Boolean(item.live_microsoft_iq),
+          proof_level: normalizeProofLevel(item.proof_level),
+          warning: item.warning || "",
           humanReview: item.humanReview || "Pending Review",
           created: item.created || item.timestamp?.split("T")[0] || new Date().toISOString().split("T")[0],
           summary: item.summary || item.notes || "",
@@ -362,16 +443,22 @@ export class ApiClient {
     try {
       return await this.request<{ success: boolean; data: any }>("/api/demo/run", { method: "POST" });
     } catch {
-      return { success: true, data: { status: "Demo Complete", payload: MOCK_EXPERIMENTS } };
+      return { success: false, data: { status: "backend_offline", warning: OFFLINE_WARNING, payload: MOCK_EXPERIMENTS } };
     }
   }
 
   static async analyzePrompt(prompt: string): Promise<any> {
     try {
-      return await this.request<any>("/api/prompt/analyze", {
+      const raw = await this.request<any>("/api/prompt/analyze", {
         method: "POST",
         body: JSON.stringify({ prompt }),
       });
+      return {
+        success: true,
+        mode: "backend_orchestrator",
+        data: experimentFromPromptResponse(raw),
+        raw,
+      };
     } catch {
       // Return beautiful fallback mock data matching user query
       const normalized = prompt.toLowerCase();
@@ -388,7 +475,11 @@ export class ApiClient {
           modelType: "Random Forest Classifier",
           category: "Overfitting & Hyperparameter Splurge",
           confidence: 76,
-          iqMode: "local-foundry",
+          iqMode: "local_client_simulation",
+          is_live_backend: false,
+          is_live_microsoft_iq: false,
+          proof_level: "offline_mock_preview",
+          warning: OFFLINE_WARNING,
           humanReview: "Requires Audit",
           created: new Date().toISOString().split('T')[0],
           summary: prompt,
@@ -420,7 +511,11 @@ export class ApiClient {
 
       return {
         success: true,
-        mode: "offline-mock",
+        mode: "offline_mock_preview",
+        is_live_backend: false,
+        is_live_microsoft_iq: false,
+        proof_level: "offline_mock_preview",
+        warning: OFFLINE_WARNING,
         data: selected
       };
     }
@@ -449,21 +544,64 @@ export class ApiClient {
     }
   }
 
-  static async generateReport(experimentId: string): Promise<Report> {
+  static async generateReport(experimentId: string): Promise<Report & {
+    content?: string;
+    is_offline_preview?: boolean;
+    path?: string;
+    run_id?: string;
+    proof_level?: string;
+    live_microsoft_iq?: boolean;
+    citations?: string[];
+    agent_trace_summary?: any[];
+  }> {
     try {
-      return await this.request<Report>(`/api/report/${experimentId}/generate`, { method: "POST" });
+      return await this.request<any>(`/api/report/${experimentId}/generate`, { method: "POST" });
     } catch {
       const found = MOCK_EXPERIMENTS.find(e => e.id === experimentId) || MOCK_EXPERIMENTS[0];
+      const content = [
+        "# Offline Preview Report",
+        "",
+        "OFFLINE MOCK PREVIEW — NOT LIVE SUBMISSION PROOF",
+        "",
+        `run_id: offline_client_preview`,
+        `experiment_id: ${found.id}`,
+        "active_reasoning_provider: local_client_simulation",
+        "active_grounding_provider: local_client_simulation",
+        "proof_level: offline_mock_preview",
+        "live_microsoft_iq: false",
+        "",
+        "## Citations",
+        "No backend citations available.",
+        "",
+        "## Agent Trace Summary",
+        ...found.reasoningSteps.map((step) => `- ${step}`),
+        "",
+        "## Root Cause",
+        found.rootCause,
+        "",
+        "## Remediation Plan",
+        ...found.recommendedFixes.map((fix) => `- ${fix}`),
+        "",
+        "## Certification Mapping",
+        found.certificationMapping,
+      ].join("\n");
       return {
         id: `REP-${Math.floor(500 + Math.random() * 500)}`,
         experimentId: found.id,
         title: `${found.id} Diagnostics and remediation certification`,
         created: new Date().toISOString().split('T')[0],
-        type: "Responsible AI Certification Plan",
+        type: "Offline Preview Report",
         summary: found.summary,
         diagnosis: found.rootCause,
         remediation: found.recommendedFixes.join("\n"),
-        certification: found.certificationMapping
+        certification: found.certificationMapping,
+        content,
+        is_offline_preview: true,
+        run_id: "offline_client_preview",
+        proof_level: "offline_mock_preview",
+        live_microsoft_iq: false,
+        citations: [],
+        agent_trace_summary: found.reasoningSteps,
       };
     }
   }
@@ -510,11 +648,7 @@ export class ApiClient {
   }
 
   static streamAnalysis(experimentId: string): EventSource {
-    let cleanPath = `/api/analysis/stream/${encodeURIComponent(experimentId)}`;
-    if (cleanPath.startsWith("/api/")) {
-      cleanPath = cleanPath.substring(4);
-    }
-    const url = `${API_BASE}${cleanPath}`;
+    const url = this.buildUrl(`/api/analysis/stream/${encodeURIComponent(experimentId)}`);
     return new EventSource(url);
   }
 
@@ -522,6 +656,8 @@ export class ApiClient {
     selected_iq_layer: string;
     proof_level: string;
     live_microsoft_iq: boolean;
+    is_live_backend: boolean;
+    is_live_microsoft_iq: boolean;
     azure_ai_search_configured: boolean;
     azure_ai_search_used_this_run: boolean;
     foundry_model_configured: boolean;
@@ -534,6 +670,7 @@ export class ApiClient {
     run_id: string;
     trace_ids: string[];
     warnings: string[];
+    warning: string;
     honest_limitation: string;
   }> {
     try {
@@ -543,6 +680,8 @@ export class ApiClient {
         selected_iq_layer: "Foundry IQ",
         proof_level: "offline_mock_preview",
         live_microsoft_iq: false,
+        is_live_backend: false,
+        is_live_microsoft_iq: false,
         azure_ai_search_configured: false,
         azure_ai_search_used_this_run: false,
         foundry_model_configured: false,
@@ -554,7 +693,8 @@ export class ApiClient {
         source_types: [],
         run_id: "",
         trace_ids: [],
-        warnings: ["API Offline. Returned offline simulation mock proof."],
+        warnings: [OFFLINE_WARNING],
+        warning: OFFLINE_WARNING,
         honest_limitation: "Offline mock mode. No live Azure OpenAI or Azure AI Search connection exists."
       };
     }
@@ -564,6 +704,8 @@ export class ApiClient {
     selected_iq_layer: string;
     proof_level: string;
     live_microsoft_iq: boolean;
+    is_live_backend: boolean;
+    is_live_microsoft_iq: boolean;
     azure_ai_search_configured: boolean;
     azure_ai_search_used_this_run: boolean;
     foundry_model_configured: boolean;
@@ -576,6 +718,7 @@ export class ApiClient {
     run_id: string;
     trace_ids: string[];
     warnings: string[];
+    warning: string;
     honest_limitation: string;
   }> {
     try {
@@ -585,21 +728,32 @@ export class ApiClient {
         selected_iq_layer: "Foundry IQ",
         proof_level: "offline_mock_preview",
         live_microsoft_iq: false,
+        is_live_backend: false,
+        is_live_microsoft_iq: false,
         azure_ai_search_configured: false,
         azure_ai_search_used_this_run: false,
         foundry_model_configured: false,
         foundry_model_used_this_run: false,
         active_reasoning_provider: "local",
         active_grounding_provider: "local_iq",
-        citations_count: 3,
-        grounding_refs: ["knowledge/foundry_docs/remediation_playbook.md#chunk-3"],
-        source_types: ["remediation_playbooks"],
-        run_id: "mock-run-id-1234",
-        trace_ids: ["mock-trace-1", "mock-trace-2"],
-        warnings: ["API Offline. Ran local simulation test proof."],
+        citations_count: 0,
+        grounding_refs: [],
+        source_types: [],
+        run_id: "",
+        trace_ids: [],
+        warnings: [OFFLINE_WARNING],
+        warning: OFFLINE_WARNING,
         honest_limitation: "Offline mock mode. No live Azure OpenAI or Azure AI Search connection exists."
       };
     }
+  }
+
+  static async getLiveIQProof() {
+    return this.getProofStatus();
+  }
+
+  static async runLiveIQProof() {
+    return this.runProofCheck();
   }
 }
 
@@ -615,3 +769,5 @@ export function searchKnowledge(query: string) { return ApiClient.searchKnowledg
 export function generateReport(experimentId: string) { return ApiClient.generateReport(experimentId); }
 export function getProofStatus() { return ApiClient.getProofStatus(); }
 export function runProofCheck() { return ApiClient.runProofCheck(); }
+export function getLiveIQProof() { return ApiClient.getLiveIQProof(); }
+export function runLiveIQProof() { return ApiClient.runLiveIQProof(); }

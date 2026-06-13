@@ -18,27 +18,28 @@ def build_iq_status_report(
     is_production = config.APP_MODE == "production"
     azure_search_live = bool(integrations.get("azure_ai_search", False))
     azure_openai_live = bool(integrations.get("azure_openai", False))
-    live_azure_verified = is_production and azure_search_live and azure_openai_live
+    live_azure_configured = is_production and azure_search_live and azure_openai_live
+    live_azure_verified = False
     openai_fallback_active = config.MODEL_PROVIDER == "openai" and bool(config.OPENAI_API_KEY)
 
     # Determine if Foundry OpenAI or Agent is active
-    foundry_openai_active = config.MODEL_PROVIDER == "foundry_openai" and bool(config.FOUNDRY_OPENAI_BASE_URL)
-    foundry_agent_active = config.MODEL_PROVIDER == "foundry_agent" and bool(config.FOUNDRY_PROJECT_ENDPOINT)
+    foundry_openai_active = is_production and config.MODEL_PROVIDER == "foundry_openai" and bool(config.FOUNDRY_OPENAI_BASE_URL)
+    foundry_agent_active = is_production and config.MODEL_PROVIDER == "foundry_agent" and bool(config.FOUNDRY_PROJECT_ENDPOINT)
     live_foundry_model_active = foundry_openai_active or foundry_agent_active
 
-    if live_azure_verified:
-        proof_level = "live_azure_foundry"
-        compliance_status = "live_iq_verified"
+    if live_azure_configured:
+        proof_level = "configuration_ready_requires_run"
+        compliance_status = "configured_requires_proof_run"
         honest_limitation = (
-            "Azure AI Search and Azure OpenAI are configured for live Foundry IQ proof. "
-            "Cosmos DB and Blob Storage are optional proof services unless enabled."
+            "Azure AI Search and Azure/OpenAI reasoning are configured, but this status endpoint does not run retrieval. "
+            "Use POST /proof/live-iq/run to verify live Microsoft IQ grounding."
         )
-        current_mode = "live_azure_foundry"
+        current_mode = "azure_configured_requires_run"
         judge_explanation = (
-            "FailureLens IQ uses Azure AI Search for live grounded retrieval and Azure OpenAI for reasoning."
+            "FailureLens IQ is configured for Azure AI Search and model reasoning. Live Microsoft IQ is only true after a proof run returns Azure AI Search refs."
         )
     elif live_foundry_model_active:
-        proof_level = "foundry_model_live"
+        proof_level = "foundry_model_live_without_search"
         compliance_status = "foundry_model_live"
         honest_limitation = (
             "The demo uses Microsoft Foundry model reasoning through the Foundry OpenAI-compatible endpoint. "
@@ -64,7 +65,7 @@ def build_iq_status_report(
             "base retrieval, citations, permission-aware metadata, and grounded reasoning agents."
         )
     else:
-        proof_level = "local_demo_fallback"
+        proof_level = "local_foundry_iq_adapter"
         compliance_status = "ready_for_demo"
         honest_limitation = (
             "Azure OpenAI deployment was blocked because model quota was 0. "
@@ -97,7 +98,8 @@ def build_iq_status_report(
         "required_by_hackathon": True,
         "selected_iq_layer": "Foundry IQ",
         "current_mode": current_mode,
-        "live_microsoft_iq": live_azure_verified,
+        "live_microsoft_iq": False,
+        "is_live_microsoft_iq": False,
         "foundry_iq_base_architecture": True,
         "adapter_ready": True,
         "azure_quota_blocked": True,
@@ -120,7 +122,7 @@ def build_iq_status_report(
         "implementation": "Azure AI Search grounded retrieval connected to FailureLens reasoning agents",
         "app_mode": "production" if is_production else "demo",
         "foundry_iq_mode": current_mode,
-        "foundry_iq_label": "Live Azure Foundry IQ" if live_azure_verified else "Foundry IQ Local Adapter Mode",
+        "foundry_iq_label": "Azure configured; proof run required" if live_azure_configured else "Foundry IQ Local Adapter Mode",
         "active_provider": provider,
         "active_reasoning_provider": config.MODEL_PROVIDER,
         "active_iq_provider": provider,
@@ -132,7 +134,9 @@ def build_iq_status_report(
             "openai_fallback_provider": True,
         },
         "live_services": {
-            "azure_ai_search": azure_search_live,
+            "azure_ai_search": False,
+            "azure_ai_search_configured": azure_search_live,
+            "azure_ai_search_used_this_run": False,
             "azure_openai": azure_openai_live,
             "azure_cosmos_db": bool(integrations.get("azure_cosmos_db", False)),
             "azure_blob_storage": bool(integrations.get("azure_blob_storage", False)),
@@ -147,10 +151,10 @@ def build_iq_status_report(
         "confidence_supported": True,
         # Phase 7 specific requirements
         "foundry_project_connected": bool(config.FOUNDRY_PROJECT_ENDPOINT),
-        "foundry_model_deployment": config.FOUNDRY_MODEL_DEPLOYMENT or "grok-4-20-reasoning",
-        "foundry_agent_name": config.FOUNDRY_AGENT_NAME or "FailureLens1",
+        "foundry_model_deployment": config.FOUNDRY_MODEL_DEPLOYMENT,
+        "foundry_agent_name": config.FOUNDRY_AGENT_NAME,
         "live_microsoft_foundry_model": bool(config.MODEL_PROVIDER in ("foundry_openai", "foundry_agent")),
-        "live_microsoft_iq_grounding": bool(azure_search_live and config.IQ_PROVIDER == "azure_foundry"),
+        "live_microsoft_iq_grounding": False,
         "foundry_iq_adapter_ready": True,
     }
 

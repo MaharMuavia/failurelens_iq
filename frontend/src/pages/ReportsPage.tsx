@@ -10,30 +10,24 @@ export const ReportsPage: React.FC = () => {
   const handleDownloadMarkdownReport = async (exp: Experiment) => {
     setDownloadingIds(prev => ({ ...prev, [exp.id]: true }));
     try {
-      const report = await ApiClient.generateReport(exp.id);
-      
-      let md = `# FailureLens IQ - Grounded Diagnostic & Remediation Report\n\n`;
-      md += `**Report Reference ID:** ${report.id}\n`;
-      md += `**Target System Reference:** ${report.experimentId} / ${exp.project}\n`;
-      md += `**Evaluation Category:** ${exp.category}\n`;
-      md += `**Model Architecture:** ${exp.modelType}\n`;
-      md += `**Grounded Confidence Metric:** ${exp.confidence}% Secured Check\n`;
-      md += `**Trace Generation Created At:** ${report.created || new Date().toISOString().split('T')[0]}\n\n`;
-      
-      md += `## 1. Executive Summary & Prompt Description\n`;
-      md += `${report.summary || exp.summary || "No description provided."}\n\n`;
-      
-      md += `## 2. Technical System Diagnostics (Root Cause)\n`;
-      md += `${report.diagnosis || exp.rootCause || "No layout diagnosed."}\n\n`;
-      
-      md += `## 3. Recommended Remediation & Corrections Playbook\n`;
-      md += `${report.remediation || (exp.recommendedFixes ? exp.recommendedFixes.join("\n") : "No specific corrections cataloged.")}\n\n`;
-      
-      md += `## 4. Certification & Compliance Standards Alignment\n`;
-      md += `${report.certification || exp.certificationMapping || "General Model Governance Principles Mapping"}\n\n`;
-      
-      md += `---------------------------------------------------------------\n`;
-      md += `FailureLens Verification Identifier: SHA-256 Grounded Verification Certified (Microsoft Agents League / NIST)\n`;
+      const report: any = await ApiClient.generateReport(exp.id);
+      const md = report.content || [
+        "# FailureLens IQ Backend Report",
+        "",
+        `run_id: ${report.run_id || "unknown"}`,
+        `experiment_id: ${report.experiment_id || report.experimentId || exp.id}`,
+        `proof_level: ${report.proof_level || exp.proof_level}`,
+        `live_microsoft_iq: ${String(report.live_microsoft_iq ?? exp.is_live_microsoft_iq)}`,
+        "",
+        "## Root Cause",
+        report.root_cause || report.diagnosis || exp.rootCause,
+        "",
+        "## Remediation Plan",
+        report.remediation || exp.recommendedFixes.map((fix) => `- ${fix}`).join("\n"),
+        "",
+        "## Certification Mapping",
+        report.certification || exp.certificationMapping,
+      ].join("\n");
 
       const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -58,7 +52,8 @@ export const ReportsPage: React.FC = () => {
         meta: {
           generated_by: "FailureLens IQ",
           timestamp: new Date().toISOString(),
-          compliance_standard: "Microsoft Responsible AI Platform & NIST-AI-RMF v1.0",
+          proof_level: exp.proof_level,
+          live_microsoft_iq: exp.is_live_microsoft_iq,
         },
         experiment: exp,
         report: report

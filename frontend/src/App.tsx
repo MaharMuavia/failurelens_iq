@@ -18,14 +18,21 @@ import { AppShell } from "./components/layout/AppShell";
 export default function App() {
   const { user, guestMode } = useApp();
   const [activePath, setActivePath] = useState<string>("landing");
+  const [hasSeenLanding, setHasSeenLanding] = useState<boolean>(() => localStorage.getItem("failurelens_seen_landing") === "true");
   const [selectedExperimentId, setSelectedExperimentId] = useState<string>("");
   const [selectedRunId, setSelectedRunId] = useState<string>("");
 
-  // Auto route signed-in session user straight to dashboard/chat
+  const markLandingSeen = () => {
+    localStorage.setItem("failurelens_seen_landing", "true");
+    setHasSeenLanding(true);
+  };
+
+  // Auto route returning signed-in or guest users to the judge-first chat flow
+  // only after they have seen the landing page at least once.
   useEffect(() => {
     if (user || guestMode) {
-      if (activePath === "landing" || activePath === "signin" || activePath === "signup") {
-        setActivePath("dashboard");
+      if (hasSeenLanding && (activePath === "landing" || activePath === "signin" || activePath === "signup")) {
+        setActivePath("chat");
       }
     } else {
       // If user logs out, return to landing
@@ -33,7 +40,7 @@ export default function App() {
         setActivePath("landing");
       }
     }
-  }, [user, guestMode]);
+  }, [user, guestMode, activePath, hasSeenLanding]);
 
   const handleNavigate = (path: string) => {
     if (path.startsWith("experiments/")) {
@@ -132,7 +139,10 @@ export default function App() {
     if (activePath === "signin") {
       return (
         <SignInPage
-          onSuccess={() => setActivePath("dashboard")}
+          onSuccess={() => {
+            markLandingSeen();
+            setActivePath("chat");
+          }}
           onSignUpClick={() => setActivePath("signup")}
         />
       );
@@ -140,7 +150,10 @@ export default function App() {
     if (activePath === "signup") {
       return (
         <SignUpPage
-          onSuccess={() => setActivePath("dashboard")}
+          onSuccess={() => {
+            markLandingSeen();
+            setActivePath("chat");
+          }}
           onSignInClick={() => setActivePath("signin")}
         />
       );
@@ -148,7 +161,21 @@ export default function App() {
     // Fallback: Show home landing page
     return (
       <LandingPage
-        onStartDemo={() => setActivePath("signin")}
+        onStartDemo={() => {
+          markLandingSeen();
+          setActivePath("signin");
+        }}
+      />
+    );
+  }
+
+  if ((user || guestMode) && activePath === "landing" && !hasSeenLanding) {
+    return (
+      <LandingPage
+        onStartDemo={() => {
+          markLandingSeen();
+          setActivePath("chat");
+        }}
       />
     );
   }

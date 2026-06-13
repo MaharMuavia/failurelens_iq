@@ -66,6 +66,18 @@ export const MicrosoftIQProofPage: React.FC = () => {
           badgeColor: "indigo",
           description: "Hybrid proof: Model provider is connected and reasoning live. Grounding uses localized Markdown source caches."
         };
+      case "azure_search_live_with_local_reasoning":
+        return {
+          badgeLabel: "Azure Search Live (Local Reasoning)",
+          title: "Live Azure AI Search Grounding",
+          bg: "bg-cyan-50/90 text-cyan-900 border-cyan-200/80 backdrop-blur-md",
+          badgeBg: "bg-cyan-500/10 text-cyan-700 border-cyan-500/25",
+          indicator: "bg-cyan-500",
+          message: "Azure AI Search returned grounding references for this run. Model reasoning used deterministic local fallback, so this is partial Microsoft proof.",
+          certified: true,
+          badgeColor: "cyan",
+          description: "Partial liveness proof: grounding is live Azure AI Search; reasoning is not a live Microsoft model for this run."
+        };
       case "local_foundry_iq_adapter":
         return {
           badgeLabel: "Local Adapter Active",
@@ -110,6 +122,31 @@ export const MicrosoftIQProofPage: React.FC = () => {
     }
   };
 
+  const handleTestBackend = async () => {
+    const health = await ApiClient.getHealth();
+    showNotice(health.status === "offline_mock_preview" ? "Backend is offline." : `Backend connected: ${health.status}`);
+  };
+
+  const handleTestAzureSearch = async () => {
+    const status = await ApiClient.getProofStatus();
+    setProofResult(status);
+    showNotice(
+      status.azure_ai_search_configured
+        ? "Azure AI Search credentials are configured. Run live proof to verify refs."
+        : "Azure AI Search is not configured."
+    );
+  };
+
+  const handleTestFoundryModel = async () => {
+    const status = await ApiClient.getProofStatus();
+    setProofResult(status);
+    showNotice(
+      status.foundry_model_configured
+        ? "Foundry/Azure model credentials are configured. Run live proof to verify model use."
+        : "Foundry/Azure model credentials are not configured."
+    );
+  };
+
   const showNotice = (msg: string) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(""), 4000);
@@ -120,6 +157,8 @@ export const MicrosoftIQProofPage: React.FC = () => {
       selected_iq_layer: "Foundry IQ",
       proof_level: "offline_mock_preview",
       live_microsoft_iq: false,
+      is_live_backend: false,
+      is_live_microsoft_iq: false,
       azure_ai_search_configured: false,
       azure_ai_search_used_this_run: false,
       foundry_model_configured: false,
@@ -131,12 +170,13 @@ export const MicrosoftIQProofPage: React.FC = () => {
       source_types: [],
       run_id: "",
       trace_ids: [],
-      warnings: ["API Offline. Returned offline simulation mock proof."],
+      warnings: ["Offline Mock Preview - not live submission proof."],
+      warning: "Offline Mock Preview - not live submission proof.",
       honest_limitation: "Offline mock mode. No live Azure OpenAI or Azure AI Search connection exists."
     };
 
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    showNotice("Live IQ Proof JSON copied to clipboard!");
+    showNotice("Judge proof JSON copied to clipboard.");
   };
 
   const handleCopyChecklist = () => {
@@ -148,7 +188,7 @@ export const MicrosoftIQProofPage: React.FC = () => {
     
     const checklistStr = `
 # FailureLens IQ Microsoft Integration Checklist
-- APP_MODE: FullStack Express + Vite
+- APP_MODE: FastAPI + Vite React
 - ACTIVE_REASONING_PROVIDER: ${activeProvider}
 - ACTIVE_GROUNDING_PROVIDER: ${activeGrounding}
 - GROUNDING_CITATIONS_USED: ${citationsCount}
@@ -266,7 +306,7 @@ export const MicrosoftIQProofPage: React.FC = () => {
             </p>
           </div>
           <div className="text-2xs text-[#64748B] space-y-1 pt-1 border-t border-slate-50">
-            <div>Deployment: grok-4-20-reasoning</div>
+            <div>Deployment: {proofResult?.foundry_model_configured ? "Configured by environment" : "Not configured"}</div>
             <div>Mode: {proofResult?.active_reasoning_provider || "Local Mock"}</div>
           </div>
         </div>
@@ -383,6 +423,27 @@ export const MicrosoftIQProofPage: React.FC = () => {
 
           <div className="space-y-3 pt-2">
             <button
+              onClick={handleTestBackend}
+              className="w-full p-3 text-xs font-semibold rounded-xl border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Server className="w-3.5 h-3.5 text-[#64748B]" /> Test Backend
+            </button>
+
+            <button
+              onClick={handleTestAzureSearch}
+              className="w-full p-3 text-xs font-semibold rounded-xl border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Database className="w-3.5 h-3.5 text-[#64748B]" /> Test Azure Search
+            </button>
+
+            <button
+              onClick={handleTestFoundryModel}
+              className="w-full p-3 text-xs font-semibold rounded-xl border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#64748B]" /> Test Foundry Model
+            </button>
+
+            <button
               onClick={handleRunCheck}
               disabled={checking}
               className="w-full p-3.5 text-xs font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
@@ -395,7 +456,7 @@ export const MicrosoftIQProofPage: React.FC = () => {
               onClick={handleCopyProofJson}
               className="w-full p-3 text-xs font-semibold rounded-xl border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC] transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
-              <Copy className="w-3.5 h-3.5 text-[#64748B]" /> Copy Live IQ Proof JSON
+              <Copy className="w-3.5 h-3.5 text-[#64748B]" /> Copy Judge Proof JSON
             </button>
             
             <button

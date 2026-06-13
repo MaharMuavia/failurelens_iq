@@ -105,13 +105,13 @@ def build_readiness_report(config: Settings, integrations: dict[str, bool]) -> d
         else:
             score = 68
 
-    is_live_azure = status == "azure_ready"
+    is_live_azure = False
     proof_level = (
-        "live_azure_foundry"
-        if is_live_azure
+        "configuration_ready_requires_run"
+        if status == "azure_ready"
         else "openai_fallback_with_foundry_adapter"
         if config.MODEL_PROVIDER == "openai" and config.OPENAI_API_KEY
-        else "foundry_adapter_ready"
+        else "local_foundry_iq_adapter"
         if config.APP_MODE == "production"
         else "local_demo_fallback"
     )
@@ -130,8 +130,9 @@ def build_readiness_report(config: Settings, integrations: dict[str, bool]) -> d
             "active_reasoning_provider": config.MODEL_PROVIDER,
             **({"honest_limitation": "Demo mode uses local grounding; Azure AI Search is not connected."} if not is_live_azure else {}),
             "proof": {
-                "active_iq_provider": "AzureFoundryIQProvider" if is_live_azure else "FoundryIQLocalAdapter",
+                "active_iq_provider": "AzureFoundryIQProvider" if status == "azure_ready" else "FoundryIQLocalAdapter",
                 "azure_ai_search_configured": checks["azure_ai_search_configured"],
+                "azure_ai_search_used_this_run": False,
             },
         },
         "judge_recommendation": (

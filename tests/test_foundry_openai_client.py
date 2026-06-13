@@ -3,12 +3,14 @@ from unittest.mock import AsyncMock, patch, MagicMock
 import httpx
 from backend.services.foundry_openai_client import FoundryOpenAIClient
 
+TEST_FOUNDRY_DEPLOYMENT = "test-foundry-deployment"
+
 @pytest.mark.anyio
 async def test_foundry_openai_client_success():
     client = FoundryOpenAIClient(
         base_url="https://test.foundry.azure.com/openai/v1",
         api_key="secret-key-1234",
-        deployment="grok-4-20-reasoning"
+        deployment=TEST_FOUNDRY_DEPLOYMENT
     )
     
     assert client.enabled is True
@@ -39,11 +41,11 @@ async def test_foundry_openai_client_success():
         assert mock_post.called
         args, kwargs = mock_post.call_args
         assert kwargs["headers"]["Authorization"] == "Bearer secret-key-1234"
-        assert kwargs["json"]["model"] == "grok-4-20-reasoning"
+        assert kwargs["json"]["model"] == TEST_FOUNDRY_DEPLOYMENT
         
         assert response["ok"] is True
         assert response["provider"] == "MicrosoftFoundryOpenAI"
-        assert response["model"] == "grok-4-20-reasoning"
+        assert response["model"] == TEST_FOUNDRY_DEPLOYMENT
         assert "test cause" in response["content"]
 
 @pytest.mark.anyio
@@ -51,7 +53,7 @@ async def test_foundry_openai_client_failures():
     client = FoundryOpenAIClient(
         base_url="https://test.foundry.azure.com/openai/v1",
         api_key="secret-key-1234",
-        deployment="grok-4-20-reasoning"
+        deployment=TEST_FOUNDRY_DEPLOYMENT
     )
     
     # Auth Failure (401)

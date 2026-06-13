@@ -31,13 +31,13 @@ async def test_iq_status_demo_mode_returns_local_fallback(monkeypatch):
     payload = response.json()
     assert payload["required_by_hackathon"] is True
     assert payload["selected_iq_layer"] == "Foundry IQ"
-    assert payload["proof_level"] == "local_demo_fallback"
+    assert payload["proof_level"] == "local_foundry_iq_adapter"
     assert payload["compliance_status"] == "ready_for_demo"
     assert "Azure AI Search is not live" in payload["honest_limitation"]
 
 
 @pytest.mark.anyio
-async def test_iq_status_production_with_mocked_azure_search_returns_live_azure_foundry():
+async def test_iq_status_production_with_mocked_azure_search_requires_proof_run():
     original_mode = settings.APP_MODE
     original_config = app.state.azure_config
     original_provider = app.state.iq_provider
@@ -64,8 +64,9 @@ async def test_iq_status_production_with_mocked_azure_search_returns_live_azure_
         app.state.iq_provider = original_provider
 
     payload = response.json()
-    assert payload["proof_level"] == "live_azure_foundry"
-    assert payload["compliance_status"] == "live_iq_verified"
-    assert payload["live_microsoft_iq"] is True
-    assert payload["live_services"]["azure_ai_search"] is True
+    assert payload["proof_level"] == "configuration_ready_requires_run"
+    assert payload["compliance_status"] == "configured_requires_proof_run"
+    assert payload["live_microsoft_iq"] is False
+    assert payload["live_services"]["azure_ai_search_configured"] is True
+    assert payload["live_services"]["azure_ai_search_used_this_run"] is False
     assert payload["active_provider"] == "AzureFoundryIQProvider"

@@ -22,7 +22,7 @@ MODEL_PROVIDER=foundry_openai
 FOUNDRY_PROJECT_ENDPOINT=https://maviakhan6622-2791-resource.services.ai.azure.com/api/projects/maviakhan6622-2791
 FOUNDRY_OPENAI_BASE_URL=https://maviakhan6622-2791-resource.services.ai.azure.com/openai/v1
 FOUNDRY_API_KEY=PASTE_KEY_HERE
-FOUNDRY_MODEL_DEPLOYMENT=grok-4-20-reasoning
+FOUNDRY_MODEL_DEPLOYMENT=<your-foundry-deployment-name>
 FOUNDRY_AGENT_NAME=FailureLens1
 FOUNDRY_AGENT_VERSION=1
 ```

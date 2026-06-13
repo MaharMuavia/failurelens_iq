@@ -4,7 +4,11 @@ export interface Experiment {
   modelType: string;
   category: string;
   confidence: number;
-  iqMode: 'offline-mock' | 'local-foundry' | 'foundry-live' | 'azure-live';
+  iqMode: 'offline_mock_preview' | 'local_client_simulation' | 'local_foundry_iq_adapter' | 'live_azure_foundry';
+  is_live_backend: boolean;
+  is_live_microsoft_iq: boolean;
+  proof_level: 'offline_mock_preview' | 'local_client_simulation' | 'local_foundry_iq_adapter' | 'foundry_model_live_without_search' | 'azure_search_live_with_local_reasoning' | 'live_azure_foundry';
+  warning: string;
   humanReview: 'Approved' | 'Requires Audit' | 'Pending Review';
   created: string;
   summary: string;

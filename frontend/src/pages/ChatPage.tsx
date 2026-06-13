@@ -37,30 +37,24 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigate, onSelectExperime
   const handleDownloadFinalReport = async (exp: Experiment) => {
     setDownloadingReportIds(prev => ({ ...prev, [exp.id]: true }));
     try {
-      const report = await ApiClient.generateReport(exp.id);
-      
-      let md = `# FailureLens IQ - Grounded Diagnostic & Remediation Report\n\n`;
-      md += `**Report Reference ID:** ${report.id}\n`;
-      md += `**Target System Reference:** ${report.experimentId} / ${exp.project}\n`;
-      md += `**Evaluation Category:** ${exp.category}\n`;
-      md += `**Model Architecture:** ${exp.modelType}\n`;
-      md += `**Grounded Confidence Metric:** ${exp.confidence}% Secured Check\n`;
-      md += `**Trace Generation Created At:** ${report.created || new Date().toISOString().split('T')[0]}\n\n`;
-      
-      md += `## 1. Executive Summary & Prompt Description\n`;
-      md += `${report.summary || exp.summary || "No description provided."}\n\n`;
-      
-      md += `## 2. Technical System Diagnostics (Root Cause)\n`;
-      md += `${report.diagnosis || exp.rootCause || "No layout diagnosed."}\n\n`;
-      
-      md += `## 3. Recommended Remediation & Corrections Playbook\n`;
-      md += `${report.remediation || (exp.recommendedFixes ? exp.recommendedFixes.join("\n") : "No specific corrections cataloged.")}\n\n`;
-      
-      md += `## 4. Certification & Compliance Standards Alignment\n`;
-      md += `${report.certification || exp.certificationMapping || "General Model Governance Principles Mapping"}\n\n`;
-      
-      md += `---------------------------------------------------------------\n`;
-      md += `FailureLens Verification Standard: SHA-256 Grounded Verification Certified (Microsoft Agents League / NIST)\n`;
+      const report: any = await ApiClient.generateReport(exp.id);
+      const md = report.content || [
+        "# FailureLens IQ Backend Report",
+        "",
+        `run_id: ${report.run_id || "unknown"}`,
+        `experiment_id: ${report.experiment_id || report.experimentId || exp.id}`,
+        `proof_level: ${report.proof_level || exp.proof_level}`,
+        `live_microsoft_iq: ${String(report.live_microsoft_iq ?? exp.is_live_microsoft_iq)}`,
+        "",
+        "## Root Cause",
+        report.root_cause || report.diagnosis || exp.rootCause,
+        "",
+        "## Remediation Plan",
+        report.remediation || exp.recommendedFixes.map((fix) => `- ${fix}`).join("\n"),
+        "",
+        "## Certification Mapping",
+        report.certification || exp.certificationMapping,
+      ].join("\n");
 
       const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -112,7 +106,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigate, onSelectExperime
     } else if (query.includes("overfit") || query.includes("forest")) {
       md += `Heuristic Bias Flag: OVERFITTING HAZARD\n`;
       md += `Primary Mitigation: Prune decision trees, use cross-validation, reduce dimensionality.\n`;
-      md += `Compliance Mapping: NIST AI Risk Management Framework Measure 2.1\n`;
+      md += `Compliance Mapping: Internal model validation review required\n`;
     } else if (query.includes("fairness") || query.includes("loan") || query.includes("protected") || query.includes("demographic") || query.includes("bias")) {
       md += `Heuristic Bias Flag: ETHICAL & DEMOGRAPHIC DISPARATE IMPACT SUSPECTED\n`;
       md += `Primary Mitigation: Filter out correlated spatial/zipcode proxy features. Train models with group fairness adversarial constraints or Fairlearn GridSearch.\n`;
@@ -126,7 +120,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigate, onSelectExperime
     md += `\n---------------------------------------------------------------\n`;
     md += `Disclaimer: This is an interim run trace. Complete compliance remediation\n`;
     md += `and FailureLens evidence reports will be generated once pipeline stabilizes.\n`;
-    md += `Security Standard: SHA-256 Grounded Verification Certified\n`;
+    md += `Proof Status: Interim local draft; final proof comes from backend report metadata.\n`;
 
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -283,11 +277,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigate, onSelectExperime
                 <div key={index} className="bg-white border border-[#E2E8F0] rounded-3xl p-6 md:p-8 shadow-md space-y-6 animate-slide-up relative">
                   
                   {/* Offline Warning banner watermark */}
-                  {!backendConnected && (
+                  {(!backendConnected || exp.is_live_backend === false) && (
                     <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-700 text-xs flex items-center gap-2 font-medium">
                       <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
-                        <strong>Offline Mock Preview</strong> — backend is currently disconnected. These results are simulation-based.
+                        <strong>Offline Mock Preview — not live submission proof.</strong>
                       </span>
                     </div>
                   )}
@@ -505,6 +499,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigate, onSelectExperime
 
           <button
             type="submit"
+            aria-label="Run analysis"
             disabled={!promptValue.trim() || isSubmitting}
             className={`p-2.5 rounded-xl transition-all ${
               promptValue.trim() && !isSubmitting

@@ -74,7 +74,7 @@
   "agent_metadata": {
     "call_mode": "mock",
     "agent_name": "",
-    "model_deployment": "grok-4-20-reasoning",
+    "model_deployment": "test-foundry-deployment",
     "schema_version": "1.0"
   }
 }

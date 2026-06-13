@@ -12,9 +12,12 @@ def test_frontend_api_client_exists_and_declares_required_functions():
         "streamAnalysis",
         "searchKnowledge",
         "generateReport",
+        "getLiveIQProof",
+        "runLiveIQProof",
     ]:
         assert f"function {name}" in client
-    assert 'import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"' in client
+    assert "CONFIGURED_API_BASE" in client
+    assert "buildUrl(path" in client
 
 
 def test_use_analysis_is_not_only_mock_data():

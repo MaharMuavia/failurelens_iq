@@ -15,10 +15,10 @@ from backend.services.foundry_openai_client import FoundryOpenAIClient
 async def main():
     base_url = os.getenv("FOUNDRY_OPENAI_BASE_URL", "")
     api_key = os.getenv("FOUNDRY_API_KEY", "")
-    deployment = os.getenv("FOUNDRY_MODEL_DEPLOYMENT", "grok-4-20-reasoning")
+    deployment = os.getenv("FOUNDRY_MODEL_DEPLOYMENT", "")
 
-    if not base_url or not api_key:
-        print("Error: FOUNDRY_OPENAI_BASE_URL and FOUNDRY_API_KEY must be set in your .env file.")
+    if not base_url or not api_key or not deployment:
+        print("Error: FOUNDRY_OPENAI_BASE_URL, FOUNDRY_API_KEY, and FOUNDRY_MODEL_DEPLOYMENT must be set in your .env file.")
         sys.exit(1)
 
     print("Initializing FoundryOpenAIClient...")

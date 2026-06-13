@@ -1,97 +1,221 @@
 # FailureLens IQ
 
-**Enterprise Reasoning Agent for Diagnosing Failed ML Experiments**
+FailureLens IQ turns failed machine-learning experiments into evidence-grounded diagnosis, remediation plans, and Microsoft certification-aligned team learning.
 
-> Built for the [Microsoft Agents League](https://aka.ms/agentsleague) hackathon.
+## Microsoft Agents League Context
 
-FailureLens IQ is a DEMO-READY MVP WITH AZURE PRODUCTION ADAPTERS. Real Azure calls are enabled only when credentials are provided. It analyzes failed machine learning experiments, identifies root causes, recommends fixes, and maps failures to learning/certification gaps. It is grounded in a curated ML-failure knowledge base and utilizes Microsoft Azure AI Foundry Agents/Models to perform automated experiment diagnosis.
+This repository is built for the Microsoft Agents League, Reasoning Agents Track. The submission demonstrates a multi-agent workflow that inspects failed ML experiment evidence, explains root cause and uncertainty, retrieves grounding, and produces manager-ready remediation output.
 
----
+The project is intentionally honest about liveness:
 
-## One-Line Pitch
+- Local mode runs without credentials and uses a local Foundry IQ-compatible adapter.
+- Azure mode can use Azure AI Search and Azure/Foundry model reasoning when environment variables are present.
+- `live_microsoft_iq=true` is returned only after a run actually returns `source_type=azure_ai_search` grounding refs.
 
-When an ML experiment fails, FailureLens IQ classifies the failure, explains the root cause, finds similar historical failures, and converts the lesson into a remediation and Microsoft certification-readiness plan.
+## What Problem It Solves
 
-## Microsoft Foundry IQ Integration
+Failed ML experiments often disappear as isolated notebooks, bad metrics, or one-off incident notes. Teams lose the lesson, managers cannot see recurring skill gaps, and the same failure pattern returns later in production.
 
-FailureLens IQ uses Microsoft Foundry IQ as its intelligence layer for knowledge grounding, certification mapping, and reasoning support.
+FailureLens IQ converts each failed run into reusable organizational memory:
 
-* **Local Mode** (default): TF-IDF knowledge retrieval over Microsoft certification skill guides. Zero Azure dependencies. Full reasoning pipeline runs locally.
-* **Azure Mode**: Azure AI Search + Azure AI Foundry for enterprise semantic search, vector retrieval, and production grounding.
+- What failed?
+- Why did it fail?
+- Which evidence supports that diagnosis?
+- What remains uncertain?
+- What should the team do next?
+- Which Microsoft learning path or certification skill area is implicated?
 
-Direct OpenAI can be enabled as fallback reasoning with `MODEL_PROVIDER=openai`, but OpenAI direct API does not replace Microsoft IQ.
+## Why It Matters
 
----
+Enterprise AI teams need more than a classifier. They need reasoning traces, grounded evidence, confidence calibration, human-review gates, and honest proof of which live services were used. FailureLens IQ is structured around those audit needs.
 
-## Architecture
+## Key Features
+
+- Prompt-to-experiment analysis from the React chat page.
+- Multi-agent orchestration for intake, classification, root cause, historical memory, remediation, assessment, and manager synthesis.
+- Local Foundry IQ-compatible knowledge retrieval for credential-free demos.
+- Azure AI Search adapter for live grounding when configured.
+- Azure/Foundry model reasoning support through environment-selected providers.
+- Microsoft certification and learning-path mapping.
+- Confidence and human-review gates.
+- Live proof endpoint with trace IDs and copyable judge JSON.
+- FastAPI backend, Vite React frontend, and CI-ready tests.
+
+## Agent Workflow
+
+1. Intake Agent validates the experiment packet and missing fields.
+2. Planner builds the suspected failure hypothesis and execution plan.
+3. Classifier Agent categorizes the failure pattern from metrics and notes.
+4. RootCauseAnalyzerAgent explains root cause, counter-evidence, uncertainty, and next action.
+5. ExperimentHistorianAgent compares the run against prior failures.
+6. CertificationEvaluatorAgent maps the diagnosis to Microsoft skill domains.
+7. PrescriptiveCoachAgent creates 3-day and 7-day remediation plans.
+8. AssessmentAgent generates practice checks.
+9. ManagerAgent packages an executive summary and audit trail.
+
+## Microsoft IQ / Azure Architecture
 
 ```mermaid
-graph TD
-    subgraph Frontend
-        UI[React + Vite Dashboard]
-    end
-
-    subgraph Backend [FastAPI Application]
-        MAIN[app/main.py]
-        SRV[services/failurelens_service.py]
-        PARSER[services/json_parser.py]
-        AG_CLIENT[services/foundry_agent_client.py]
-        MD_CLIENT[services/foundry_model_client.py]
-        KB[Data Grounding: Knowledge Base]
-    end
-
-    subgraph Azure Foundry / OpenAI
-        Agent[Saved Foundry Agent]
-        Model[Deployed grok-4-20-reasoning Model]
-    end
-
-    UI -- "POST /api/analyze" --> MAIN
-    MAIN --> SRV
-    SRV --> AG_CLIENT
-    SRV --> MD_CLIENT
-    SRV --> PARSER
-    AG_CLIENT -.->|FOUNDRY_CALL_MODE=agent| Agent
-    MD_CLIENT -.->|FOUNDRY_CALL_MODE=model| Model
-    SRV -.->|FOUNDRY_CALL_MODE=mock| PARSER
-    PARSER --> KB
+flowchart LR
+    UI["Vite React frontend"] --> API["FastAPI backend"]
+    API --> ORCH["Reasoning orchestrator"]
+    ORCH --> AGENTS["Specialized reasoning agents"]
+    AGENTS --> IQ["Foundry IQ grounding layer"]
+    IQ --> LOCAL["Local Markdown adapter"]
+    IQ --> SEARCH["Azure AI Search (when configured)"]
+    AGENTS --> MODEL["Azure OpenAI / Foundry model (when configured)"]
+    ORCH --> PROOF["/proof/live-iq/run"]
 ```
 
----
+The local adapter mirrors the Foundry IQ shape: source documents, citations, permission metadata, retrieval mode, and grounding confidence. It is not represented as live Microsoft IQ.
 
-## Environment Setup & Installation
+## Live Proof Model
 
-### 1. Backend Setup
+`GET /proof/live-iq` reports configuration status only. It never sets `live_microsoft_iq=true`.
+
+`POST /proof/live-iq/run` performs an analysis run and returns proof metadata:
+
+- `live_azure_foundry`: Microsoft model reasoning worked and Azure AI Search returned real refs.
+- `foundry_model_live_without_search`: Azure/Foundry model reasoning worked, but grounding was local or search returned no refs.
+- `azure_search_live_with_local_reasoning`: Azure AI Search returned refs, but reasoning was deterministic/local.
+- `local_foundry_iq_adapter`: backend and local adapter worked without live Azure grounding.
+- `offline_mock_preview`: frontend/client simulation or backend unavailable.
+
+## Backend Routes
+
+- `GET /health`: service and configuration status.
+- `GET /readiness`: submission readiness checks.
+- `GET /iq/status`: Microsoft IQ configuration and adapter status.
+- `POST /api/analyze`: legacy-compatible analysis endpoint, backed by the orchestrator.
+- `POST /analysis/run`: run analysis for a stored experiment.
+- `POST /analysis/custom`: run analysis for a supplied experiment payload.
+- `POST /prompt/analyze`: convert a natural-language prompt into an experiment and analyze it.
+- `POST /demo/run`: judge demo run using the orchestrator.
+- `GET /proof/live-iq`: configuration-only proof status.
+- `POST /proof/live-iq/run`: real proof run with trace IDs.
+
+## Frontend Pages
+
+- Landing: project entry page.
+- Sign in / guest access: reviewer-friendly local session.
+- Reasoning Chat: first judge flow, sample prompts, analysis results, evidence, remediation, certification mapping.
+- Executive Dashboard: summary view.
+- Experiment Memory: stored and generated experiment records.
+- Agent Runs & Traces: agent timeline views.
+- Foundry IQ Retrieval: grounding/knowledge view.
+- Microsoft IQ Proof: live proof run and Copy Judge Proof JSON.
+- Generated Reports: report artifacts.
+- Settings: local session and integration status.
+
+## Environment Variables
+
+Copy `.env.example` or `.env.azure.example` and set only the values you need.
+
+Core:
+
+```env
+APP_MODE=demo
+MODEL_PROVIDER=local
+ENABLE_AUTH=false
+API_KEY=
+```
+
+Azure AI Search:
+
+```env
+AZURE_AI_SEARCH_ENDPOINT=
+AZURE_AI_SEARCH_KEY=
+AZURE_AI_SEARCH_INDEX=failurelens-knowledge
+```
+
+Azure OpenAI:
+
+```env
+MODEL_PROVIDER=azure_openai
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_DEPLOYMENT=
+```
+
+Foundry OpenAI-compatible endpoint:
+
+```env
+MODEL_PROVIDER=foundry_openai
+FOUNDRY_OPENAI_BASE_URL=
+FOUNDRY_API_KEY=
+FOUNDRY_MODEL_DEPLOYMENT=
+```
+
+Optional storage:
+
+```env
+ENABLE_AZURE_TRACE_STORAGE=false
+AZURE_COSMOS_ENDPOINT=
+AZURE_COSMOS_KEY=
+AZURE_COSMOS_DATABASE=
+AZURE_COSMOS_CONTAINER=
+ENABLE_AZURE_REPORT_UPLOAD=false
+AZURE_STORAGE_CONNECTION_STRING=
+AZURE_BLOB_CONTAINER=
+```
+
+## Local Mode
+
+Local mode is the default. It needs no credentials.
 
 ```bash
-# 1. Create a virtual environment
-python -m venv .venv
-
-# 2. Activate virtual environment
-# On Windows (PowerShell):
-.venv\Scripts\activate
-# On macOS / Linux:
-source .venv/bin/activate
-
-# 3. Install dependencies
-pip install -r backend/requirements.txt
-
-# 4. Copy backend environment template
-cp backend/.env.example backend/.env
+python -m pip install -r requirements.txt
+cd frontend
+npm install
+npm run dev
 ```
 
-### 2. Running the Backend
+From the `frontend` directory, `npm run dev` starts FastAPI on `http://127.0.0.1:8000`, waits for `/health`, and then starts Vite on `http://127.0.0.1:5173`.
 
-Run the FastAPI backend with:
+Local mode should be described as `local_foundry_iq_adapter`, not live Microsoft IQ.
+
+## Production Azure Mode
+
+Production mode should be used only after credentials are configured:
+
+```env
+APP_MODE=production
+IQ_PROVIDER=azure_foundry
+MODEL_PROVIDER=azure_openai
+```
+
+Production startup validates required Azure Search and selected model-provider credentials. A production configuration still is not proof by itself. Use `POST /proof/live-iq/run` and inspect `azure_ai_search_used_this_run`, `foundry_model_used_this_run`, and `live_microsoft_iq`.
+
+## Azure AI Search Indexing
+
+The indexing script builds documents with:
+
+`id`, `source_id`, `title`, `content`, `citation`, `source_type`, `chunk_id`, `permission_scope`, `tags`, `url`.
+
+Dry run:
 
 ```bash
-uvicorn app.main:app --reload --app-dir backend
+python scripts/index_foundry_iq_sources.py --dry-run --verbose
 ```
 
-Once running, you can access the interactive API docs at `http://localhost:8000/docs`.
+Upload:
 
-### 3. Frontend Setup
+```bash
+python scripts/index_foundry_iq_sources.py
+```
 
-In a new terminal:
+The script hides keys in logs and exits if upload credentials are missing.
+
+## Running Backend
+
+```bash
+python -m pip install -r requirements.txt
+python -m uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+API docs are available at `http://127.0.0.1:8000/docs`.
+
+## Running Frontend
 
 ```bash
 cd frontend
@@ -99,114 +223,81 @@ npm install
 npm run dev
 ```
 
----
+This starts both backend and frontend. Use `npm run dev:frontend` for Vite only or `npm run dev:backend` for FastAPI only. Vite proxies `/api/*` to `http://127.0.0.1:8000/*`. Override direct API calls with `VITE_API_BASE_URL=http://127.0.0.1:8000`.
 
-## Switching Call Modes
+## Running Tests
 
-FailureLens IQ supports three execution modes controlled by the `FOUNDRY_CALL_MODE` environment variable in your `.env` file:
+Backend:
 
-### 1. Mock Mode (`FOUNDRY_CALL_MODE=mock`)
-* **Purpose**: Run the entire system locally without requiring any active Azure subscription or API keys.
-* **How it works**: Returns high-quality, realistic synthetic diagnoses matching the input experiment profile (e.g., overfitting, leakage, imbalance, underfitting).
-* **Setup**: This is the default mode. No credentials required.
-
-### 2. Agent Mode (`FOUNDRY_CALL_MODE=agent`)
-* **Purpose**: Execute diagnosis using a saved Microsoft Azure AI Foundry Agent.
-* **How it works**: Connects to the agent using the Azure AI Projects SDK.
-* **Required variables**:
-  ```env
-  AZURE_AI_PROJECT_ENDPOINT=your_project_endpoint_connection_string
-  AZURE_AI_AGENT_NAME=FailureLensIQAgent
-  AZURE_AUTH_MODE=api_key # or aad
-  AZURE_AI_API_KEY=your_azure_api_key
-  ```
-
-### 3. Model Mode (`FOUNDRY_CALL_MODE=model`)
-* **Purpose**: Query the deployed model directly using the OpenAI-compatible client pattern.
-* **How it works**: Sends a structured system prompt and experiment data to the model.
-* **Required variables**:
-  ```env
-  AZURE_AI_PROJECT_ENDPOINT=your_project_endpoint_connection_string
-  AZURE_AI_API_KEY=your_azure_api_key
-  AZURE_AI_MODEL_DEPLOYMENT_NAME=grok-4-20-reasoning
-  ```
-
----
-
-## Security
-
-* **Never commit `.env` or `.env.local`**. These are added to `.gitignore`.
-* **Private Key & Secret Protection**: `*.key`, `*secrets*`, and `secrets/` folders are ignored by git.
-* **API Log Masking**: API keys and connection strings are parsed securely and never printed to console logs.
-
----
-
-## API Documentation
-
-### GET `/health`
-Returns the status of the API, the current active mode, and whether Azure credentials have been configured.
-
-**Sample Response**:
-```json
-{
-  "status": "ok",
-  "service": "FailureLens IQ API",
-  "foundry_mode": "mock",
-  "credentials_configured": false
-}
+```bash
+python -m pytest tests -v
 ```
 
-### POST `/api/analyze`
-Core endpoint for analyzing a failed machine learning experiment.
+Frontend:
 
-**Request Payload**:
-```json
-{
-  "experiment": {
-    "experiment_id": "rf-overfit-001",
-    "model": "RandomForestClassifier",
-    "train_accuracy": 0.97,
-    "validation_accuracy": 0.61,
-    "test_accuracy": 0.59,
-    "dataset_size": 2000,
-    "feature_count": 120,
-    "notes": "No cross-validation, no feature selection, default hyperparameters."
-  }
-}
+```bash
+cd frontend
+npm run test -- --run
+npm run build
 ```
 
-**Response Schema**:
-Matches the `FailureAnalysisResponse` model. See `backend/data/golden_outputs/overfitting_random_forest_output.json` for a full response example.
+## Judge Demo Walkthrough
 
----
+1. Start backend and frontend.
+2. Open the app.
+3. Sign in or continue as guest.
+4. Land on Reasoning Chat.
+5. Click the class-imbalance sample prompt.
+6. Run analysis.
+7. Review reasoning trace, confidence, root cause, grounding, remediation, and certification mapping.
+8. Open Microsoft IQ Proof.
+9. Click the live proof diagnostic.
+10. Copy Judge Proof JSON.
+11. Explain the proof level honestly.
 
-## Microsoft IQ & Knowledge Base Files
+## Security And Secret Policy
 
-Grounding data and enterprise knowledge are structured inside `backend/data/knowledge/`:
+- Do not commit `.env`, `.env.local`, `.env.production.local`, keys, tokens, or connection strings.
+- Use environment variables only.
+- The app does not print API keys.
+- CI checks for committed `.env` and real-looking secrets.
+- Azure trace storage and report upload are opt-in cost-guarded features.
 
-1. **`ml_failure_patterns.md`**: Outlines common metrics, symptoms, and indicators for Overfitting, Underfitting, Data Leakage, Class Imbalance, Metric Mismatch, Non-Representative Splits, Feature Drift, and Label Noise.
-2. **`certification_rubric.md`**: Maps each failure category to specific Microsoft certification paths (e.g. DP-100, AI-102, DP-203, PL-300) and learning paths.
-3. **`enterprise_ml_playbook.md`**: Standard Operating Procedures (SOP) containing immediate fix protocols, validation requirements, and production risk evaluation.
+## Known Limitations
 
----
+- Local mode is a local adapter, not live Microsoft IQ.
+- Direct OpenAI fallback, if enabled, is not Microsoft IQ proof.
+- Azure AI Search configuration is not proof until a run returns Azure Search refs.
+- Cosmos DB and Blob Storage are optional proof services and may be disabled by cost guards.
+- The frontend offline fallback is labeled `offline_mock_preview` and is not submission proof.
 
-## Demo Flow for Hackathon Judges
+## Troubleshooting
 
-1. **Start Backend & Frontend** in mock mode (verify `/health` is reporting `foundry_mode: mock`).
-2. **Open Dashboard** at `http://localhost:5173`.
-3. **Select Overfitting Sample** from the sample selector and click **Analyse Experiment**.
-4. **Walk through the Diagnosis**:
-   * Review the train-test accuracy gap.
-   * Explain the step-by-step **Reasoning Trace** displaying factual observations and interpretations.
-   * Review the **Recommended Fixes** and the structured **Next Experiment Plan**.
-   * Show the **Certification Gap** mapping.
-5. **Demonstrate Code Extensibility**: Show the judge how the exact same request will flow to the saved Azure Foundry Agent or model by simply updating `.env` to `FOUNDRY_CALL_MODE=agent` or `FOUNDRY_CALL_MODE=model`.
+- Backend offline in frontend: run `npm run dev` from `frontend`, verify `http://127.0.0.1:8000/health`, or set `VITE_API_BASE_URL`.
+- `live_microsoft_iq=false` despite credentials: run `POST /proof/live-iq/run` and inspect `source_types`.
+- Azure Search configured but no refs: verify the index schema and run the indexing script.
+- Production startup fails: configure Azure Search plus the selected model provider.
+- Frontend tests fail after dependency changes: run `npm install` inside `frontend` and retry.
 
----
+## Repository Structure
 
-## Documentation
-
-For detailed guides, policies, and architectures, refer to the following project documents:
-* **Production Deployment**: [Production Hardening](docs/PRODUCTION_HARDENING.md)
-* **Security & Auth**: [Security Model](docs/SECURITY_MODEL.md)
-* **Foundry IQ Alignment**: [Microsoft IQ Honest Compliance](docs/MICROSOFT_IQ_HONEST_COMPLIANCE.md)
+```text
+backend/
+  agents/                 reasoning agents
+  api/routes/             FastAPI routes
+  azure/                  Azure Search, Blob, Cosmos, OpenAI adapters
+  core/                   orchestrator, config, middleware, security
+  models/                 request/response schemas
+  services/               IQ providers, report generation, stores
+frontend/
+  src/api/                typed API client and fallback labeling
+  src/pages/              app pages and judge flow
+  src/components/         shared layout and UI
+knowledge/
+  foundry_docs/           local grounding sources
+  foundry_iq_sources/     Azure Search source docs
+scripts/
+  index_foundry_iq_sources.py
+tests/
+  backend and repository contract tests
+```

@@ -201,6 +201,8 @@ def build_demo_response(
     exp = ctx.experiment
     classification = ctx.classification.model_dump(mode="json") if ctx.classification else {}
     diagnosis = ctx.diagnosis.model_dump(mode="json") if ctx.diagnosis else {}
+    if diagnosis and "uncertainty" not in diagnosis:
+        diagnosis["uncertainty"] = diagnosis.get("reflection_notes") or ["No additional uncertainty was recorded by the root-cause agent."]
     historical = ctx.historical_memory.model_dump(mode="json") if ctx.historical_memory else {}
     remediation = ctx.remediation.model_dump(mode="json") if ctx.remediation else {}
     cert_ready = {
@@ -265,16 +267,22 @@ def build_demo_response(
     current_mode = grounding_summary.get("mode", settings.APP_MODE)
     azure_openai_live = bool(enabled_integrations.get("azure_openai", False))
     
-    is_live_azure = "azure_ai_search" in source_types and provider in ("azure_openai", "foundry_openai", "foundry_agent") and used_llm
+    azure_ai_search_used_this_run = "azure_ai_search" in source_types
+    microsoft_reasoning_used = provider in ("azure_openai", "foundry_openai", "foundry_agent") and used_llm
+    is_live_azure = azure_ai_search_used_this_run and microsoft_reasoning_used
 
     if is_live_azure:
         proof_level = "live_azure_foundry"
         compliance_status = "live_iq_verified"
         honest_limitation = "Azure AI Search and Microsoft model reasoning completed successfully."
-    elif provider in ("azure_openai", "foundry_openai", "foundry_agent") and used_llm:
+    elif microsoft_reasoning_used:
         proof_level = "foundry_model_live_without_search"
         compliance_status = "foundry_model_live"
-        honest_limitation = "Microsoft model reasoning worked, but grounding fell back to local memory."
+        honest_limitation = "Microsoft model reasoning worked, but grounding did not return Azure AI Search refs."
+    elif azure_ai_search_used_this_run:
+        proof_level = "azure_search_live_with_local_reasoning"
+        compliance_status = "azure_search_live_with_local_reasoning"
+        honest_limitation = "Azure AI Search grounded retrieval completed, but model reasoning used local deterministic fallback."
     else:
         proof_level = "local_foundry_iq_adapter"
         compliance_status = "needs_azure_configuration"
@@ -303,7 +311,7 @@ def build_demo_response(
     elif provider == "azure_openai":
         reasoning_model = settings.AZURE_OPENAI_DEPLOYMENT
     elif provider in ("foundry_openai", "foundry_agent"):
-        reasoning_model = settings.FOUNDRY_MODEL_DEPLOYMENT or "grok-4-20-reasoning"
+        reasoning_model = settings.FOUNDRY_MODEL_DEPLOYMENT or "configured_foundry_deployment"
 
     real_model_reasoning = {
         "used": used_llm,
@@ -315,7 +323,7 @@ def build_demo_response(
     foundry_model_proof = {
         "project_endpoint_configured": bool(settings.FOUNDRY_PROJECT_ENDPOINT),
         "openai_base_url_configured": bool(settings.FOUNDRY_OPENAI_BASE_URL),
-        "model_deployment": settings.FOUNDRY_MODEL_DEPLOYMENT or "grok-4-20-reasoning",
+        "model_deployment": settings.FOUNDRY_MODEL_DEPLOYMENT or "",
         "agent_name": settings.FOUNDRY_AGENT_NAME or "FailureLens1",
         "agent_version": settings.FOUNDRY_AGENT_VERSION or "1",
         "used_for_reasoning": used_llm and provider in ("foundry_openai", "foundry_agent")
@@ -438,17 +446,13 @@ def build_demo_response(
             "foundry_iq_base_architecture": True,
             "permission_metadata_supported": True,
             "agentic_retrieval_supported": True,
-            "proof_level": (
-                "live_azure_foundry"
-                if is_live_azure
-                else "foundry_model_live"
-                if provider in ("foundry_openai", "foundry_agent") and used_llm
-                else proof_level
-            ),
+            "proof_level": proof_level,
             "live_azure_verified": is_live_azure,
             "live_microsoft_iq": is_live_azure,
             "live_microsoft_foundry_model": bool(used_llm and provider in ("foundry_openai", "foundry_agent")),
-            "live_microsoft_iq_grounding": "azure_ai_search" in source_types,
+            "live_microsoft_iq_grounding": azure_ai_search_used_this_run,
+            "azure_ai_search_used_this_run": azure_ai_search_used_this_run,
+            "foundry_model_used_this_run": microsoft_reasoning_used,
             "source_types": source_types,
             "citations_present": citations_present,
             "reasoning_trace_present": True,

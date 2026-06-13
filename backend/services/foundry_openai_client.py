@@ -4,6 +4,8 @@ import httpx
 from typing import Any
 import logging
 
+from backend.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +46,7 @@ class FoundryOpenAIClient:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.2,
-            "max_tokens": 700
+            "max_tokens": max(settings.AZURE_OPENAI_MAX_TOKENS, 1800),
         }
 
         try:
@@ -94,7 +96,7 @@ class FoundryOpenAIClient:
             return {
                 "ok": True,
                 "provider": "MicrosoftFoundryOpenAI",
-                "model": "grok-4-20-reasoning",
+                "model": self.deployment,
                 "content": content,
                 "raw": payload
             }

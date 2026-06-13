@@ -39,8 +39,11 @@ export const SettingsPage: React.FC = () => {
 
   const handleResetDemoState = () => {
     localStorage.removeItem("failurelens_experiments");
+    localStorage.removeItem("failurelens_seen_landing");
+    localStorage.removeItem("failurelens_user");
+    localStorage.removeItem("failurelens_guest_mode");
     refreshExperiments();
-    showNotification("Local demo experiments cache flushed successfully!");
+    showNotification("Local demo session and experiments cache cleared. Refresh to return to the landing page.");
   };
 
   const tabs: Array<{ id: typeof activeTab; icon: any; label: string }> = [
@@ -253,8 +256,8 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="text-xs space-y-1.5 text-[#64748B]">
                   <p>API Endpoint Server base: <strong className="text-slate-800 font-mono">window.location.origin</strong></p>
-                  <p>GCP Local Foundry Adapter: <strong className="text-slate-800 font-mono">OK Active (simulation matches)</strong></p>
-                  <p>Gemini LLM Analyzer Mode: <strong className="text-slate-800 font-mono">{backendConnected ? "Live FullStack Node Compiler" : "Mock Model Provider fallback"}</strong></p>
+                  <p>Foundry IQ Local Adapter: <strong className="text-slate-800 font-mono">Available for credential-free demos</strong></p>
+                  <p>Backend Orchestrator: <strong className="text-slate-800 font-mono">{backendConnected ? "Connected" : "Offline mock preview"}</strong></p>
                 </div>
               </div>
 
@@ -287,7 +290,7 @@ export const SettingsPage: React.FC = () => {
               <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-3 font-mono text-[10.5px]">
                 <div className="flex justify-between border-b border-slate-200/50 pb-2">
                   <span className="text-[#0F172A] font-bold">APP_MODE</span>
-                  <span className="text-[#2563EB]">Fullstack Express + React</span>
+                  <span className="text-[#2563EB]">FastAPI + Vite React</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/50 pb-2">
                   <span className="text-[#0F172A] font-bold">IQ_PROVIDER</span>
@@ -299,7 +302,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between border-b border-slate-200/50 pb-2">
                   <span className="text-[#0F172A] font-bold">MODEL_PROVIDER</span>
-                  <span className="text-purple-600">Gemini (GoogleGenAI TypeScript SDK)</span>
+                  <span className="text-purple-600">{iqStatus.provider}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#0F172A] font-bold">AZURE_AI_INDEX</span>
@@ -322,15 +325,15 @@ export const SettingsPage: React.FC = () => {
 
               <div className="p-4 rounded-2xl border border-red-100 bg-red-50/50 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h4 className="text-xs font-bold text-red-900">Flush Local Experiments Diagnostics Cache</h4>
-                  <p className="text-[10.5px] text-red-600 mt-1">This operation cannot be reversed. Cached items are wiped.</p>
+                  <h4 className="text-xs font-bold text-red-900">Reset Demo Session</h4>
+                  <p className="text-[10.5px] text-red-600 mt-1">Clears local experiments, saved guest/user session, and landing-page state.</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleResetDemoState}
                   className="p-2.5 px-5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all cursor-pointer"
                 >
-                  Confirm Reset Data Cache
+                  Reset Demo Session
                 </button>
               </div>
             </div>

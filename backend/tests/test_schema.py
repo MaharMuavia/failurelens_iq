@@ -24,4 +24,4 @@ def test_golden_output_validation():
     assert model.uncertainty.level == "Low"
     assert model.certification_gap.skill_gap == "Weak understanding of Random Forest regularization techniques and rigorous experimental validation practices"
     assert model.iq_grounding.grounding_confidence == 90
-    assert model.agent_metadata.model_deployment == "grok-4-20-reasoning"
+    assert model.agent_metadata.model_deployment == "test-foundry-deployment"

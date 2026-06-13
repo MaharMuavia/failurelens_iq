@@ -11,7 +11,16 @@ interface AppContextType {
   animationsEnabled: boolean;
   experiments: Experiment[];
   backendConnected: boolean;
-  iqStatus: { status: string; provider: string; iq_mode: string; live_search: boolean; citations_count: number };
+  iqStatus: {
+    status: string;
+    provider: string;
+    iq_mode: string;
+    live_search: boolean;
+    citations_count: number;
+    proof_level?: string;
+    foundry_model_live?: boolean;
+    azure_ai_search_configured?: boolean;
+  };
   refreshExperiments: () => Promise<void>;
   signIn: (name: string, email: string, role: string, org: string) => void;
   signInAsGuest: () => void;
@@ -71,7 +80,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const checkBackend = async () => {
     try {
       const health = await ApiClient.getHealth();
-      setBackendConnected(health.status !== "offline-mock");
+      setBackendConnected(health.status !== "offline_mock_preview");
       const iq = await ApiClient.getIQStatus();
       setIqStatus(iq);
     } catch {

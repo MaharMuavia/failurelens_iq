@@ -196,7 +196,7 @@ class LLMReasoningProvider:
             # Map the model configuration for reasoning result
             model_val = None
             if provider_name in ("MicrosoftFoundryOpenAI", "MicrosoftFoundryAgent"):
-                model_val = settings.FOUNDRY_MODEL_DEPLOYMENT or "grok-4-20-reasoning"
+                model_val = settings.FOUNDRY_MODEL_DEPLOYMENT
             elif provider_name == "AzureOpenAI":
                 model_val = settings.AZURE_OPENAI_DEPLOYMENT
             elif provider_name == "OpenAI":

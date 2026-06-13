@@ -2,5 +2,5 @@
   "name": "FailureLens IQ",
   "description": "An interactive reasoning agent platform to diagnose failed ML experiments, pinpoint root causes, extract compliance evidence, and generate production-ready remediation reports.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": ["MICROSOFT_FOUNDRY_IQ_READY", "FASTAPI_BACKEND", "VITE_REACT_CLIENT"]
 }

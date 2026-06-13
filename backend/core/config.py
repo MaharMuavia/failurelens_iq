@@ -5,8 +5,11 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-# Eagerly load the .env file if it exists
-load_dotenv()
+# Eagerly load root and backend env files if present. backend/.env is allowed to
+# override root .env so local backend credentials can be kept scoped there.
+ROOT_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT_DIR / ".env")
+load_dotenv(ROOT_DIR / "backend" / ".env", override=True)
 
 class Settings(BaseModel):
     # App Settings
@@ -73,7 +76,7 @@ class Settings(BaseModel):
     AZURE_AI_PROJECT_ENDPOINT: str = Field(default="")
     AZURE_AI_API_KEY: str = Field(default="")
     AZURE_AI_AGENT_NAME: str = Field(default="FailureLensIQAgent")
-    AZURE_AI_MODEL_DEPLOYMENT_NAME: str = Field(default="grok-4-20-reasoning")
+    AZURE_AI_MODEL_DEPLOYMENT_NAME: str = Field(default="")
     FOUNDRY_CALL_MODE: str = Field(default="mock")
     AZURE_AUTH_MODE: str = Field(default="api_key")
     BACKEND_PORT: int = Field(default=8000)
@@ -163,7 +166,7 @@ class Settings(BaseModel):
             AZURE_AI_PROJECT_ENDPOINT=os.getenv("AZURE_AI_PROJECT_ENDPOINT", "").strip(),
             AZURE_AI_API_KEY=os.getenv("AZURE_AI_API_KEY", "").strip(),
             AZURE_AI_AGENT_NAME=os.getenv("AZURE_AI_AGENT_NAME", "FailureLensIQAgent").strip() or "FailureLensIQAgent",
-            AZURE_AI_MODEL_DEPLOYMENT_NAME=os.getenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "grok-4-20-reasoning").strip() or "grok-4-20-reasoning",
+            AZURE_AI_MODEL_DEPLOYMENT_NAME=os.getenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "").strip(),
             FOUNDRY_CALL_MODE=os.getenv("FOUNDRY_CALL_MODE", "mock").strip().lower() or "mock",
             AZURE_AUTH_MODE=os.getenv("AZURE_AUTH_MODE", "api_key").strip() or "api_key",
             BACKEND_PORT=get_int_env("BACKEND_PORT", 8000),

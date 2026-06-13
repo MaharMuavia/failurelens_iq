@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List
 
 class ReasoningStep(BaseModel):
@@ -21,6 +21,8 @@ class IQGrounding(BaseModel):
     grounding_confidence: int = Field(0, ge=0, le=100, description="Confidence score for IQ grounding match")
 
 class AgentMetadata(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     call_mode: str = Field(..., description="Foundry call mode (agent, model, or mock)")
     agent_name: str = Field("", description="Name of the saved Azure Foundry agent")
     model_deployment: str = Field("", description="Azure Foundry model deployment name")
@@ -39,3 +41,10 @@ class FailureAnalysisResponse(BaseModel):
     certification_gap: CertificationGap = Field(..., description="Identified skill gaps mapped to certifications")
     iq_grounding: IQGrounding = Field(..., description="Grounding info mapped to Microsoft IQ patterns")
     agent_metadata: AgentMetadata = Field(..., description="Metadata identifying the model/agent that produced the response")
+    active_reasoning_provider: str = Field("deterministic_fallback", description="Provider actually used for root-cause reasoning")
+    active_grounding_provider: str = Field("local_iq", description="Provider actually used for grounding in this response")
+    proof_level: str = Field("local_foundry_iq_adapter", description="Honest proof level for this analysis run")
+    live_microsoft_iq: bool = Field(False, description="True only when this run returned Azure AI Search grounding refs")
+    azure_ai_search_used_this_run: bool = Field(False, description="Whether Azure AI Search returned real refs for this run")
+    foundry_model_used_this_run: bool = Field(False, description="Whether Azure/Foundry model reasoning completed for this run")
+    warnings: List[str] = Field(default_factory=list, description="Honesty warnings and fallback notices")

@@ -853,7 +853,7 @@ class InteractiveReportService:
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Foundry OpenAI Model Deployment</td><td><code style="color: var(--accent);">{esc(provider_proof.get('model', 'grok-4-20-reasoning'))}</code></td></tr>
+                        <tr><td>Foundry OpenAI Model Deployment</td><td><code style="color: var(--accent);">{esc(provider_proof.get('model') or 'not_configured')}</code></td></tr>
                         <tr><td>Reasoning LLM Provider</td><td><strong>{esc(model_provider)}</strong></td></tr>
                         <tr><td>Azure AI Search (Live Grounding)</td><td><strong>{live_search}</strong></td></tr>
                         <tr><td>Cosmos DB (Reasoning Trace Storage)</td><td><strong>{live_cosmos}</strong></td></tr>

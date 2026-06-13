@@ -56,16 +56,19 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   const currentIqBadgeStyle = () => {
     if (!backendConnected || !iqStatus || !iqStatus.iq_mode) {
-      return { bg: "bg-red-50 text-red-600 border-red-200", label: "Offline Mock Preview" };
+      return { bg: "bg-red-50 text-red-600 border-red-200", label: "Backend Offline" };
     }
-    const mode = iqStatus.iq_mode.toLowerCase();
-    if (mode.includes("azure-live") || mode.includes("azure_live") || mode.includes("azure live") || mode.includes("live_azure") || mode.includes("live-azure")) {
-      return { bg: "bg-emerald-50 text-emerald-600 border-emerald-200", label: "Live Azure Grounding" };
+    const proof = (iqStatus.proof_level || "").toLowerCase();
+    if (proof === "live_azure_foundry" || iqStatus.live_search) {
+      return { bg: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Live Azure Foundry Proof" };
     }
-    if (mode.includes("foundry") || mode.includes("local-foundry") || mode.includes("local_foundry")) {
-      return { bg: "bg-purple-50 text-purple-600 border-purple-200", label: "Local Foundry Adapter" };
+    if (proof === "azure_search_live_with_local_reasoning") {
+      return { bg: "bg-cyan-50 text-cyan-700 border-cyan-200", label: "Azure AI Search Live" };
     }
-    return { bg: "bg-sky-50 text-sky-600 border-sky-200", label: "Microsoft IQ Ready" };
+    if (iqStatus.foundry_model_live || proof === "foundry_model_live_without_search") {
+      return { bg: "bg-indigo-50 text-indigo-700 border-indigo-200", label: "Foundry Model Live" };
+    }
+    return { bg: "bg-sky-50 text-sky-700 border-sky-200", label: "Backend Connected • Local IQ Adapter" };
   };
 
   const iqStyle = currentIqBadgeStyle();

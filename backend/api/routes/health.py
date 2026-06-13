@@ -32,11 +32,7 @@ async def health(request: Request) -> dict[str, object]:
         "foundry_project_endpoint_configured": foundry_project_endpoint_configured,
         "foundry_model_deployment": settings.FOUNDRY_MODEL_DEPLOYMENT,
         "foundry_agent_configured": foundry_agent_configured,
-        "microsoft_iq_live": (
-            settings.APP_MODE == "production"
-            and app.state.azure_config.enabled_integrations["azure_ai_search"]
-            and app.state.azure_config.enabled_integrations["azure_openai"]
-        ),
+        "microsoft_iq_live": False,
         "foundry_adapter_ready": True,
         "azure_policy_blocker_documented": True,
         "active_iq_provider": type(app.state.iq_provider).__name__,
@@ -51,12 +47,14 @@ async def health(request: Request) -> dict[str, object]:
         "microsoft_iq": {
             "selected_layer": "Foundry IQ",
             "provider": type(app.state.iq_provider).__name__,
-            "proof_level": "live_azure_foundry" if (
+            "proof_level": "configuration_ready_requires_run" if (
                 settings.APP_MODE == "production"
                 and app.state.azure_config.enabled_integrations["azure_ai_search"]
                 and app.state.azure_config.enabled_integrations["azure_openai"]
             ) else "local_demo_fallback",
+            "live_microsoft_iq": False,
             "azure_ai_search_configured": app.state.azure_config.enabled_integrations["azure_ai_search"],
+            "azure_ai_search_used_this_run": False,
             "azure_openai_configured": app.state.azure_config.enabled_integrations["azure_openai"],
             "production_grounding_ready": (
                 settings.APP_MODE == "production"
