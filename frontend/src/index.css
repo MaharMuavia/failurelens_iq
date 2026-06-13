@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/global.css";
+@import "./styles/animations.css";
+
+@theme {
+  --font-sans: "Inter", var(--font-body);
+  --font-heading: "Space Grotesk", var(--font-heading);
+  --font-mono: "JetBrains Mono", var(--font-mono);
+  
+  --color-primary: var(--primary);
+  --color-primary-blue: var(--primary-blue);
+  --color-accent: var(--accent);
+  --color-bg-base: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-txt-dark: var(--text);
+  --color-txt-muted: var(--muted);
+  --color-border-subtle: var(--border);
+}
