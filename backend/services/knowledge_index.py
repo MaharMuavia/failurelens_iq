@@ -33,20 +33,52 @@ class KnowledgeIndex:
 
     def _load(self) -> None:
         self.chunks.clear()
-        if not self.docs_dir.exists():
-            return
-        for path in sorted(self.docs_dir.glob("*.md")):
-            text = path.read_text(encoding="utf-8")
-            sections = re.split(r"(?m)^##\s+", text)
-            for section in sections[1:]:
-                title, _, body = section.partition("\n")
-                clean = body.strip()
-                if not clean:
-                    continue
-                tokens = Counter(tokenize(f"{title} {clean}"))
-                chunk = KnowledgeChunk(path.name, title.strip(), clean, tokens)
-                self.chunks.append(chunk)
-                self.document_frequency.update(set(tokens))
+        scan_dirs = []
+        if self.docs_dir.exists():
+            scan_dirs.append(self.docs_dir)
+        
+        iq_sources_dir = self.docs_dir.parent / "foundry_iq_sources"
+        if iq_sources_dir.exists() and iq_sources_dir != self.docs_dir:
+            scan_dirs.append(iq_sources_dir)
+
+        for directory in scan_dirs:
+            for path in sorted(directory.glob("*.md")):
+                text = path.read_text(encoding="utf-8")
+                sections = re.split(r"(?m)^##\s+", text)
+                if len(sections) == 1:
+                    title = path.stem.replace("_", " ").title()
+                    lines = text.splitlines()
+                    clean_lines = []
+                    in_content = False
+                    for line in lines:
+                        if not in_content and ":" in line:
+                            key, _ = line.split(":", 1)
+                            if key.strip().lower() in {"id", "citation", "agent_usage_notes", "title", "source_type", "permission_scope", "citation_id", "tags", "relevance_tags", "content", "example_evidence"}:
+                                continue
+                        in_content = True
+                        clean_lines.append(line)
+                    content_body = "\n".join(clean_lines).strip()
+                    if content_body.startswith("content:") or content_body.startswith("content: |"):
+                        content_body = content_body.split(":", 1)[1].strip()
+                        if content_body.startswith("|"):
+                            content_body = content_body[1:].strip()
+                    clean = content_body.strip()
+                    if not clean:
+                        continue
+                    tokens = Counter(tokenize(f"{title} {clean}"))
+                    chunk = KnowledgeChunk(path.name, title, clean, tokens)
+                    self.chunks.append(chunk)
+                    self.document_frequency.update(set(tokens))
+                else:
+                    for section in sections[1:]:
+                        title, _, body = section.partition("\n")
+                        clean = body.strip()
+                        if not clean:
+                            continue
+                        tokens = Counter(tokenize(f"{title} {clean}"))
+                        chunk = KnowledgeChunk(path.name, title.strip(), clean, tokens)
+                        self.chunks.append(chunk)
+                        self.document_frequency.update(set(tokens))
 
     def _score(self, query_tokens: Counter[str], chunk: KnowledgeChunk) -> tuple[float, list[str]]:
         if not query_tokens or not chunk.tokens:

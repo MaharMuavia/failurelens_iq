@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import time
 from pathlib import Path
 from typing import Any
@@ -15,9 +14,12 @@ from backend.azure.grounding_adapter import GroundingAdapter
 from backend.azure.openai_client import AzureOpenAIClient
 from backend.core.orchestrator import Orchestrator
 from backend.services.azure_foundry_iq_provider import AzureFoundryIQProvider
+from backend.services.foundry_iq_local_adapter import FoundryIQLocalAdapter
 from backend.services.knowledge_index import KnowledgeIndex
-from backend.services.local_iq_provider import LocalIQProvider
 from backend.services.llm_reasoning_provider import LLMReasoningProvider
+from backend.services.openai_client import OpenAIClient
+from backend.services.foundry_openai_client import FoundryOpenAIClient
+from backend.services.foundry_agent_client import FoundryAgentClient
 from backend.services.report_service import ReportService
 from backend.services.scoring_service import ScoringService
 from backend.utils.data_loader import DataLoader
@@ -97,9 +99,10 @@ JUDGE_AGENTS = [
 
 
 def build_iq_provider(config: Any, grounding_adapter: GroundingAdapter, knowledge_index: KnowledgeIndex) -> Any:
-    if config.app_mode == "production" or os.getenv("IQ_PROVIDER", "").strip().lower() == "azure_foundry":
+    integrations = config.enabled_integrations
+    if config.app_mode == "production" and integrations.get("azure_ai_search"):
         return AzureFoundryIQProvider(grounding_adapter)
-    return LocalIQProvider(knowledge_index)
+    return FoundryIQLocalAdapter()
 
 
 # Global singletons to prevent repeated disk loading during app re-creations in tests
@@ -142,7 +145,25 @@ def create_app_state_for_tests() -> dict[str, Any]:
     iq_provider = build_iq_provider(azure_config, grounding_adapter, knowledge_index)
     scoring_service = ScoringService()
     openai_client = AzureOpenAIClient(azure_config)
-    llm_reasoning_provider = LLMReasoningProvider(openai_client)
+    direct_openai_client = OpenAIClient()
+    foundry_openai_client = FoundryOpenAIClient(
+        base_url=settings.FOUNDRY_OPENAI_BASE_URL,
+        api_key=settings.FOUNDRY_API_KEY,
+        deployment=settings.FOUNDRY_MODEL_DEPLOYMENT,
+    )
+    foundry_agent_client = FoundryAgentClient(
+        project_endpoint=settings.FOUNDRY_PROJECT_ENDPOINT,
+        agent_name=settings.FOUNDRY_AGENT_NAME,
+        agent_version=settings.FOUNDRY_AGENT_VERSION,
+        api_key=settings.FOUNDRY_API_KEY,
+    )
+    llm_reasoning_provider = LLMReasoningProvider(
+        azure_openai_client=openai_client,
+        openai_client=direct_openai_client,
+        foundry_openai_client=foundry_openai_client,
+        foundry_agent_client=foundry_agent_client,
+    )
+    active_llm_provider = llm_reasoning_provider._select_client()[1]
     
     state = {
         "data_loader": data_loader,
@@ -154,10 +175,16 @@ def create_app_state_for_tests() -> dict[str, Any]:
         "orchestrator": None,
         "report_service": ReportService(Path(settings.REPORT_OUTPUT_DIR)),
         "openai_client": openai_client,
+        "direct_openai_client": direct_openai_client,
+        "foundry_openai_client": foundry_openai_client,
+        "foundry_agent_client": foundry_agent_client,
         "llm_reasoning_provider": llm_reasoning_provider,
+        "model_provider": settings.MODEL_PROVIDER,
+        "active_llm_provider": active_llm_provider,
         "experiment_store": ExperimentStore(data_loader),
         "demo_cache": DemoCache(),
         "uploaded_experiments": {}, # Mirror for backward compatibility
+        "trace_timeline": {},
         "startup_loaded": _STARTUP_LOADED,
         "startup_duration_ms": _STARTUP_DURATION_MS,
         "settings": settings,
@@ -167,6 +194,11 @@ def create_app_state_for_tests() -> dict[str, Any]:
     if _GLOBAL_ORCHESTRATOR is None:
         _GLOBAL_ORCHESTRATOR = Orchestrator(state)
     state["orchestrator"] = _GLOBAL_ORCHESTRATOR
+    # The orchestrator is a process-wide singleton, so on later create_app() calls its
+    # iq_provider differs from the freshly-built one above. Share the orchestrator's
+    # instance so health, iq_status, and demo metrics all read the same retrieval counter
+    # that the agents actually incremented during a run.
+    state["iq_provider"] = _GLOBAL_ORCHESTRATOR.iq_provider
     
     # Link back to maintain compatibility with test suites modifying app.state.uploaded_experiments directly
     state["uploaded_experiments"] = state["experiment_store"]._cache
@@ -249,6 +281,8 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router)
     app.include_router(manager_router)
     app.include_router(report_router)
+    from backend.api.routes.prompt_analysis import router as prompt_analysis_router
+    app.include_router(prompt_analysis_router)
 
     return app
 

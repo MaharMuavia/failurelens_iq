@@ -1,0 +1,12 @@
+{
+  "experiment": {
+    "experiment_id": "svm-imbalance-003",
+    "model": "SVMClassifier",
+    "train_accuracy": 0.95,
+    "validation_accuracy": 0.93,
+    "test_accuracy": 0.91,
+    "dataset_size": 10000,
+    "feature_count": 30,
+    "notes": "Accuracy looks high but recall on minority class is 0.12. 95/5 class split."
+  }
+}

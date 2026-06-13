@@ -26,8 +26,20 @@ def test_app_starts_without_dotenv(monkeypatch):
     for key in env_keys:
         monkeypatch.delenv(key, raising=False)
         
-    # Attempt app creation
-    app = create_app()
-    assert app is not None
-    assert app.state.settings.APP_MODE == "demo"
-    assert app.state.settings.ENABLE_AUTH is False
+    import backend.core.config
+    import backend.api.main
+    old_settings = backend.core.config.settings
+    old_main_settings = backend.api.main.settings
+    new_settings = backend.core.config.Settings.load_from_env()
+    
+    backend.core.config.settings = new_settings
+    backend.api.main.settings = new_settings
+    try:
+        # Attempt app creation
+        app = create_app()
+        assert app is not None
+        assert app.state.settings.APP_MODE == "demo"
+        assert app.state.settings.ENABLE_AUTH is False
+    finally:
+        backend.core.config.settings = old_settings
+        backend.api.main.settings = old_main_settings

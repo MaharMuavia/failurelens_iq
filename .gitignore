@@ -10,6 +10,7 @@ reports/*.tmp
 .env
 .env.local
 .env.azure
+.env.production.local
 .uvicorn.pid
 .playwright-cli/
 output/
@@ -18,4 +19,7 @@ data/uploads/*.json
 .playwright-mcp/
 *.png
 !docs/assets/*.png
-
+*.key
+*secrets*
+secrets/
+*.secret

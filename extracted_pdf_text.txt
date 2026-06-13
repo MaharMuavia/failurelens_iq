@@ -1,0 +1,611 @@
+--- Page 1 ---
+Executive Summary
+We designed six enterprise-grade knowledge sources for FailureLens IQ, drawing on Microsoft’s AI/MLOps
+guidance and best practices. We synthesized a failure taxonomy of common ML pitfalls (e.g. class‐
+imbalance traps, data drift, leakage, etc.) using Azure ML and security references【14†L310-L314】【33†L9-
+L16】. We created 6 synthetic experiment histories that illustrate diverse failures (imbalanced data, drift,
+noisy labels, etc.), complete with realistic metrics and logs. From Azure ML and AutoML docs, we built 
+remediation playbooks with actionable steps: for example, using stratified validation or class weighting to
+counter imbalance【32†L203-L212】【32†L223-L230】, and checking for data leakage when accuracy is
+suspiciously high【33†L9-L16】. We mapped each failure to Microsoft certification guidance: e.g. Azure AI
+Fundamentals (AI-900) for general ML concepts and responsible AI【24†L139-L145】, and Azure AI Engineer
+(AI-102) for implementing solutions with Azure AI Search and OpenAI【22†L20-L23】【22†L181-L184】. Our
+Responsible AI checklist is grounded in Microsoft’s six principles (fairness, reliability, privacy, transparency,
+etc.)【25†L53-L62】, with practical steps (run fairness and error analyses, ensure interpretability, secure
+PII). Finally, our Manager Governance playbook prescribes when to escalate issues (e.g. repeated failures
+or fairness risks) and what summary to provide (impact, root cause, suggested training). 
+Together, these sources are formatted with metadata (id, title, tags, etc.) and citation links so agents can
+retrieve evidence. We updated the seed-index scripts to load them into Azure AI Search, and added tests to
+validate their schema. All code (seed script snippet below), tests, and a Codex prompt have been prepared.
+The mermaid timeline and comparison table at the end summarize the tasks and how each file is used by
+FailureLens agents.
+failure_taxonomy.md
+id: failure-taxonomy-001
+title: Failure Taxonomy
+source_type: failure_taxonomy
+permission_scope: demo
+tags: [ml_failure, root_cause_analysis, model_evaluation]
+citation: knowledge/foundry_iq_sources/failure_taxonomy.md#failure-taxonomy-001
+---
+# Failure Taxonomy
+Machine learning systems can fail in **intentional** or **unintentional** ways
+【29†L1-L8】. Intentional failures (adversarial attacks, data poisoning) occur 
+when an attacker subverts the system. Unintentional failures arise from design 
+flaws or data issues【29†L1-L8】. We categorize common ML failure types for root-
+cause analysis:
+- **Evaluation Methodology Failure:** Metrics or validation strategies are 
+inappropriate. For example, *“High accuracy, low minority-class F1”* indicates 
+1
+
+--- Page 2 ---
+that class imbalance caused a misleading high accuracy【14†L310-L314】. Always 
+use stratified splits and robust metrics (F1, weighted AUC) when classes are 
+imbalanced【32†L203-L212】【32†L223-L230】.
+- **Data Quality and Drift:** Changes or errors in data over time degrade 
+performance. *“Data drift”* means input data distributions have shifted (e.g. 
+sensor replacement or seasonal trends)【43†L119-L127】. Broken sensors or missing 
+data also cause drift. Continual data monitoring is needed【37†L103-L105】
+【43†L123-L131】.
+- **Data Leakage:** Model has access to features not available at prediction 
+time. This often produces **abnormally high accuracy** (e.g. 95%+)【33†L9-L16】. 
+Look for features derived from the label or future information. Remove or delay 
+such features to fix leakage.
+- **Model and Pipeline Bugs:** Implementation errors (e.g. incorrect data 
+splitting, feature encoding mistakes, missing hyperparameters) can cause 
+failures or unstable models. Use rigorous code reviews and automated tests to 
+catch these engineering issues.
+- **Overfitting / Underfitting:** Model is too complex or too simple. 
+Overfitting yields high train accuracy but poor generalization; mitigated by 
+more data, regularization, or cross-validation【32†L98-L107】【32†L158-L166】. 
+Underfitting means the model fails to capture patterns (low accuracy), requiring 
+more features or a different algorithm.
+- **Responsible
+AI / Fairness Failures:** The model may perform well overall but *unfairly* on 
+subgroups. Use fairness assessments and error analysis (Azure ML’s Responsible 
+AI dashboard) to detect if any group (gender, ethnicity, etc.) has 
+systematically higher error【25†L68-L77】【25†L88-L96】. Include fairness 
+constraints or additional data to address discovered bias.
+- **Deployment/Environment Mismatch:** Differences between training and 
+production (e.g. missing data pipeline, hardware differences) can break models. 
+Validate the entire end-to-end flow in a staging environment.
+Each failure type includes *signals* (e.g. high precision but low recall, rising 
+data drift statistics) and *examples* in our taxonomy to guide analysis. Agents 
+use this taxonomy to classify issues and suggest targeted fixes.
+experiment_history.json
+[
+{
+"id": "exp-001",
+2
+
+--- Page 3 ---
+"title": "High Accuracy, No Recall (Imbalanced Class)",
+"source_type": "experiment_history",
+"permission_scope": "demo",
+"failure_category": "evaluation_methodology",
+"content": "A loan default model achieved 96% accuracy on a dataset with 
+only 5% defaulters. The minority F1 score was 0.02 (no defaults correctly 
+predicted). Random train/test split masked the imbalance issue. This indicates 
+misuse of accuracy on an imbalanced dataset【14†L310-L314】【32†L223-L230】.",
+"metrics": {"accuracy": 0.96, "precision": 0.50, "recall": 0.02,
+"f1_score": 0.04},
+"preprocessing_steps": ["Standard scaling", "One-hot encode categorical 
+features"],
+"error_logs": ["Warning: Imbalanced data detected (5% minority class).",
+"Model failed to predict any minority instances."],
+"drift_indicators": [],
+"timestamp": "2026-05-10T09:15:00Z",
+"citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-001",
+"tags": ["accuracy_trap", "class_imbalance", "loan_default"]
+},
+{
+"id": "exp-002",
+"title": "Target Leakage via Date Feature",
+"source_type": "experiment_history",
+"permission_scope": "demo",
+"failure_category": "data_leakage",
+"content": "A stock prediction model using historical data achieved 98% 
+accuracy. Investigation found a date feature including future timestamps, which 
+the model used to 'cheat' on test data. When date was removed, accuracy dropped 
+to 70%. Such high accuracy strongly suggests target leakage【33†L9-L16】.",
+"metrics": {"accuracy": 0.98, "precision": 0.97, "recall": 0.99},
+"preprocessing_steps": ["Dropped irrelevant ID columns"],
+"error_logs": ["Detected future-date feature in training set."],
+"drift_indicators": [],
+"timestamp": "2026-04-20T14:30:00Z",
+"citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-002",
+"tags": ["data_leakage", "date_feature", "stock_prediction"]
+},
+{
+"id": "exp-003",
+"title": "Validation Split Missed Data Drift",
+"source_type": "experiment_history",
+"permission_scope": "demo",
+"failure_category": "data_drift",
+"content": "A sales forecast model was trained on last year’s data and 
+tested on two-month-old data. After deployment, 3 months later, prediction error 
+spiked by 15%. Retraining with recent data fixed the issue. This indicates 
+natural data drift over time【43†L119-L127】.",
+3
+
+--- Page 4 ---
+"metrics": {"accuracy": 0.85, "mse": 0.15},
+"preprocessing_steps": ["Normalized pricing features"],
+"error_logs": ["Alert: Model MSE increased 12% relative to baseline."],
+"drift_indicators": ["feature_drift: customer_churn_rate",
+"covariate_shift: region_demographics"],
+"timestamp": "2026-05-01T08:00:00Z",
+"citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-003",
+"tags": ["data_drift", "time_series", "sales_forecast"]
+},
+{
+"id": "exp-004",
+"title": "Overfitting Detected by Sharp Accuracy Drop",
+"source_type": "experiment_history",
+"permission_scope": "demo",
+"failure_category": "overfitting",
+"content": "A image classification model with many layers reached 99% 
+training accuracy but only 65% on validation. The model likely memorized the 
+training set. Adding regularization and early stopping are recommended to 
+prevent overfitting【32†L180-L188】.",
+"metrics": {"train_accuracy": 0.99, "validation_accuracy": 0.65},
+"preprocessing_steps": ["Image resizing", "Data augmentation enabled"],
+"error_logs": ["TensorFlow warning: No weight decay in model layers."],
+"drift_indicators": [],
+"timestamp": "2026-05-05T16:45:00Z",
+"citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-004",
+"tags": ["overfitting", "deep_learning", "image_classification"]
+},
+{
+"id": "exp-005",
+"title": "Noisy Labels Impact",
+"source_type": "experiment_history",
+"permission_scope": "demo",
+"failure_category": "data_quality",
+"content": "A sentiment analysis model trained on crowd-sourced labels had 
+88% accuracy. Manual review showed 10% label noise (mislabelled reviews). 
+Cleaning labels and retraining improved accuracy to 95%. This shows *data 
+quality issues* (noisy labels) can mask true performance.",
+"metrics": {"accuracy": 0.88, "f1_score": 0.87},
+"preprocessing_steps": ["Tokenization", "Removed stopwords"],
+"error_logs": ["Data check: Label consistency rate = 90%."],
+"drift_indicators": [],
+"timestamp": "2026-04-25T11:20:00Z",
+"citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-005",
+"tags": ["label_noise", "nlp", "sentiment_analysis"]
+},
+{
+"id": "exp-006",
+4
+
+--- Page 5 ---
+"title": "Fairness Issue: Subgroup Disparity",
+"source_type": "experiment_history",
+"permission_scope": "demo",
+"failure_category": "fairness",
+"content": "A hiring recommendation model had 90% overall accuracy. 
+Responsible AI checks revealed that precision was 99% for male candidates but 
+only 60% for females. This subgroup disparity indicates a **fairness failure** 
+requiring bias mitigation (e.g. balanced data or fairness constraints)【25†L68-
+L77】.",
+"metrics": {"overall_accuracy": 0.90, "male_precision": 0.99,
+"female_precision": 0.60},
+"preprocessing_steps": ["One-hot encoded gender"],
+"error_logs": ["Fairness alert: Female subgroup precision 39% lower than 
+overall."],
+"drift_indicators": [],
+"timestamp": "2026-05-15T13:30:00Z",
+"citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-006",
+"tags": ["fairness", "bias", "hiring_model"]
+}
+]
+remediation_playbooks.md
+id: remediation-playbooks-001
+title: Remediation Playbooks
+source_type: remediation_playbooks
+permission_scope: demo
+tags: [ml_best_practices, troubleshooting, root_cause_mitigation]
+citation: knowledge/foundry_iq_sources/remediation_playbooks.md#remediation-
+playbooks-001
+---
+# Remediation Playbooks
+For each failure, we prescribe action steps and timelines (3-day, 7-day plans) 
+using best practices:
+- **Evaluation Metrics & Class Imbalance:**
+- *Check metrics:* Prefer F1-score or weighted metrics over accuracy on 
+imbalanced data【32†L223-L230】.
+- *Resample or reweight:* Use class weights or over/under-sampling to balance 
+the training set【32†L203-L212】【32†L223-L230】.
+- *Validation:* Switch to stratified or time-based cross-validation.
+- **Data Leakage:**
+- *Review features:* Ensure no data from the future is included. Drop any 
+feature that contains post-event information【33†L9-L16】.
+5
+
+--- Page 6 ---
+- *Re-evaluate model:* Retrain without leaking features and compare. High 
+original accuracy (e.g. ≈95%) is a red flag【33†L9-L16】.
+- **Data Drift:**
+- *Monitor continuously:* Set up data drift monitors (Azure ML Model Monitor) 
+on key features【37†L103-L105】.
+- *Retrain model:* If drift is detected (feature means or distributions 
+change), retrain the model with up-to-date data【37†L103-L105】【43†L123-L131】.
+- *Alert and analyze:* Drill into drifting features to identify root causes 
+(e.g. sensor change or seasonal trends)【43†L123-L131】.
+- **Overfitting:**
+- *Regularize & simplify:* Apply L1/L2 regularization, reduce model complexity 
+(prune tree depth, layers)【32†L141-L149】【32†L151-L158】.
+- *More data:* Collect more training data or use data augmentation.
+- *Cross-validation:* Use k-fold cross-validation to detect overfitting early
+【32†L158-L166】.
+- **Noisy Data / Labels:**
+- *Clean data:* Identify and correct mislabeled examples.
+- *Outlier detection:* Remove or treat extreme outliers.
+- *Quality gates:* Add data validation steps in pipeline.
+- **Fairness and Bias:**
+- *Assess fairness:* Use Azure ML’s Responsible AI dashboard to compute 
+fairness metrics across groups【25†L75-L84】.
+- *Mitigation:* If bias is found, try balancing the training data, add 
+fairness constraints, or use model explanations to adjust features.
+- **Other (Governance):**
+- *Code review:* Perform peer review of the code and features.
+- *Documentation:* Document assumptions, known limitations, and remediation 
+actions.
+Each playbook outlines immediate checks (hours), short-term fixes (days), and 
+long-term improvements (weeks) tailored to the failure. Agents use these steps 
+to suggest next actions in an automated root-cause analysis.
+microsoft_certification_mapping.md
+id: cert-mapping-001
+title: Microsoft Certification Mapping
+source_type: certification_mapping
+permission_scope: demo
+tags: [certification, skill_mapping, training]
+6
+
+--- Page 7 ---
+citation: knowledge/foundry_iq_sources/microsoft_certification_mapping.md#cert-
+mapping-001
+---
+# Microsoft Certification Mapping
+This mapping connects each technical issue to a relevant Azure AI certification 
+path:
+- **Basic AI/ML Concepts:**
+- *Recommended Certification:* **AI-900: Azure AI Fundamentals**【24†L139-
+L145】.
+- *Why:* Covers fundamental AI workloads, ML principles on Azure, and 
+introduces Microsoft Foundry usage (Foundry is part of AI-900 objectives)
+【24†L139-L145】.
+- *Used for:* Teams encountering general ML workflow or fairness issues need 
+these foundational skills.
+- **Azure AI Solutions & Search:**
+- *Recommended Certification:* **AI-102: Azure AI Engineer Associate**【22†L20-
+L23】【22†L181-L184】.
+- *Why:* Focuses on designing/implementing solutions with Azure AI services, 
+including Azure AI Search (knowledge mining) and Azure OpenAI【22†L20-L23】
+【22†L181-L184】.
+- *Used for:* Teams building or debugging solutions that integrate LLMs, 
+agents, or search-based grounding.
+- **Responsible AI & Governance:**
+- *Recommended Certification:* **AZ-400: Azure DevOps Engineer** (with 
+emphasis on security/governance).
+- *Why:* Although not AI-specific, AZ-400 covers implementing secure DevOps 
+and compliance pipelines in Azure, supporting responsible AI operations.
+- *Used for:* Understanding how to integrate monitoring, auditing, and 
+governance controls in ML projects.
+- **Data and Cloud Infrastructure:**
+- *Recommended Certification:* **DP-900 / AZ-900: Azure Data/Azure 
+Fundamentals** for beginners.
+- *Why:* Provide knowledge of cloud/data fundamentals (data management, 
+security in Azure) relevant to data pipelines and compliance.
+Each suggested certification has **learning paths** on Microsoft Learn and 
+ensures the team has the skills to implement the required fixes (e.g. connecting 
+Azure Search, building secure pipelines). By aligning failures to training, we 
+support remediation and upskilling.
+7
+
+--- Page 8 ---
+responsible_ai_checklist.md
+id: responsible-ai-001
+title: Responsible AI Checklist
+source_type: responsible_ai
+permission_scope: demo
+tags: [fairness, transparency, security]
+citation: knowledge/foundry_iq_sources/responsible_ai_checklist.md#responsible-
+ai-001
+---
+# Responsible AI Checklist
+We incorporate Microsoft’s **six responsible AI principles** into our review 
+process【25†L53-L62】. Key checklist items:
+- **Fairness:**
+- Check model metrics across sensitive groups (gender, ethnicity, age) using a 
+fairness dashboard【25†L75-L84】.
+- Ensure similar predictions for similar profiles (e.g. similar minority F1 
+performance).
+- **Reliability & Safety:**
+- Verify the model handles unexpected inputs gracefully (test edge cases).
+- Use error analysis tools to find any data cohorts with unusually high error
+【25†L88-L97】.
+- **Transparency & Interpretability:**
+- Use model interpretability (feature importance) and counterfactual analysis 
+for key predictions【25†L99-L108】.
+- Document how the model makes decisions (e.g. which features most influence 
+output).
+- **Privacy & Security:**
+- Ensure no sensitive PII is used or logged. Encrypt data at rest/in 
+transit.
+- Restrict access to datasets and models via Azure RBAC【25†L137-L146】.
+- **Inclusiveness:**
+- Validate that the training data represents diverse populations.
+- Check for any subgroup entirely excluded (e.g. age or demographic not 
+present).
+- **Human Oversight:**
+- Define thresholds for human review (e.g. if model confidence < 0.60 or if 
+fairness alerts are raised).
+8
+
+--- Page 9 ---
+- Ensure a subject-matter expert reviews flagged cases before deployment.
+Each agent or pipeline stage cross-references this checklist. For example, if a 
+classification failure is detected, the **ClassifierAgent** will verify fairness 
+metrics; if issues arise, it suggests remedies like “collect more diverse data” 
+or “introduce fairness constraints”. Citations and audit logs are generated for 
+all Responsible AI checks【25†L53-L62】.
+manager_governance.md
+id: manager-governance-001
+title: Manager Governance Playbook
+source_type: manager_governance
+permission_scope: demo
+tags: [governance, escalation, oversight]
+citation: knowledge/foundry_iq_sources/manager_governance.md#manager-
+governance-001
+---
+# Manager Governance Playbook
+When to escalate to a manager or governance team:
+- **Repeated Failures:** If the same failure mode recurs across multiple 
+experiments or teams, involve a manager to address systemic issues and resource 
+allocation.
+- **Responsible AI Concerns:** Any red alerts on fairness or safety (e.g. 
+protected-class disparities, ethical risks) should be flagged immediately for 
+governance review.
+- **Regulatory Impact:** If model outputs could affect compliance (HIPAA, GDPR, 
+etc.), notify leadership to ensure legal oversight.
+- **Resource Requests:** If fixes require significant changes (e.g. new data 
+collection, infrastructure), escalate for approval.
+**Manager Summary Template:** For escalated cases, prepare a brief including:
+- **Business
+Impact:** Clearly state how the failure affects goals (e.g. revenue loss, safety 
+risk).
+- **Technical Root Cause:** Summary of why it failed (using taxonomy terms).
+- **Confidence & Uncertainty:** Model’s confidence; any unknown factors.
+-
+**Evidence:** Key citations from knowledge sources (taxonomy category, similar 
+experiment examples).
+- **Next Steps:** Proposed action plan (short-term fix and long-term 
+improvements).
+- **Training/Gaps:** Identify missing skills or tools (map to certifications or 
+workshops).
+9
+
+--- Page 10 ---
+By following this playbook, governance maintains visibility on high-impact 
+issues. Managers ensure that technical teams have support and that lessons (e.g. 
+policy changes, training) are implemented.
+Seeding Script (Azure AI Search)
+# (After creating Azure AI Search resource and setting AZURE_AI_SEARCH_* 
+in .env)
+python scripts/azure/check_azure_env.py
+python scripts/azure/create_search_index.py --index failurelens-iq-knowledge
+python scripts/azure/seed_search_index.py --source knowledge/foundry_iq_sources
+python scripts/azure/test_search_query.py
+Tests (pytest snippets)
+def test_failure_taxonomy_schema():
+import yaml
+data = yaml.safe_load(open("knowledge/foundry_iq_sources/
+failure_taxonomy.md"))
+assert isinstance(data.get("id"), str)
+assert "failure" in data.get("title").lower()
+assert "assessment" in open("knowledge/foundry_iq_sources/
+failure_taxonomy.md").read()
+def test_experiment_history_schema():
+import json
+arr = json.load(open("knowledge/foundry_iq_sources/
+experiment_history.json"))
+assert len(arr) >= 6
+for record in arr:
+2026-06-10
+Write and review
+the six knowledge
+files
+2026-06-11
+Create Azure AI
+Search resource &
+retrieve
+endpoint/key
+2026-06-12
+Run
+create_search_index.py
+(index
+failurelens-iq-knowledge)
+2026-06-12
+Run
+seed_search_index.py
+(upload all files)
+2026-06-13
+Run
+test_search_query.py
+(verify content
+retrievable)
+2026-06-13
+Deploy FailureLens
+IQ backend; verify
+/iq/status and
+/demo/run
+Seeding Knowledge Sources into Azure AI Search
+10
+
+--- Page 11 ---
+assert "id" in record and record["id"].startswith("exp-")
+assert isinstance(record.get("metrics", {}).get("accuracy", 0), (int,
+float))
+assert "tags" in record and isinstance(record["tags"], list)
+def test_certification_mapping_fields():
+data = open("knowledge/foundry_iq_sources/
+microsoft_certification_mapping.md").read()
+assert "AI-900" in data and "AI-102" in data
+def test_responsible_ai_checklist():
+text = open("knowledge/foundry_iq_sources/
+responsible_ai_checklist.md").read()
+assert "fairness" in text.lower()
+assert "transparency" in text.lower()
+def test_manager_governance_content():
+md = open("knowledge/foundry_iq_sources/manager_governance.md").read()
+assert "escalate" in md
+assert "Manager Summary" in md
+Codex Prompt to Integrate Sources
+You are a senior Microsoft Foundry AI engineer and MLOps architect. The 
+FailureLens IQ project requires adding six new knowledge sources in `knowledge/
+foundry_iq_sources/`: failure_taxonomy.md, experiment_history.json, 
+remediation_playbooks.md, microsoft_certification_mapping.md, 
+responsible_ai_checklist.md, and manager_governance.md. 
+Use the Microsoft documentation and AI practices to create content:
+- For **failure_taxonomy.md**, define both *intentional vs. unintentional* ML 
+failures【29†L1-L8】, and list categories like evaluation failures (high accuracy 
+trap)【14†L310-L314】, data drift【43†L119-L127】, data leakage【33†L9-L16】, 
+overfitting, fairness bias, etc.
+- For **experiment_history.json**, include an array of 6 records with realistic 
+fields (id, title, failure_category, content, metrics, error_logs, 
+drift_indicators, timestamp, tags). Cover diverse cases (class imbalance, 
+leakage, drift, overfitting, noisy data, fairness). Base the language on Azure 
+ML examples and the content in failure_taxonomy.
+- For **remediation_playbooks.md**, write actionable steps and timelines for 
+each failure type. Include best practices like class weighting and resampling 
+for imbalance【32†L203-L212】【32†L223-L230】, cross-validation, retraining on 
+drift【37†L103-L105】, etc. Cite Azure ML docs for recommendations.
+- For **microsoft_certification_mapping.md**, map each issue to Azure 
+certifications. Cite that AI-900 covers ML foundations and Foundry use【24†L139-
+L145】, and that AI-102 covers Azure AI Search and OpenAI【22†L20-L23】【22†L181-
+11
+
+--- Page 12 ---
+L184】. Mention responsible AI certifications if relevant.
+- For **responsible_ai_checklist.md**, list checks aligned with Microsoft’s 6 
+principles【25†L53-L62】: fairness checks, error analysis, interpretability, data 
+security, etc. Base items on Azure ML responsible AI features【25†L75-L84】
+【25†L88-L97】.
+- For **manager_governance.md**, describe escalation criteria and a manager-
+report summary template. Emphasize when to escalate (repeated failures, 
+compliance risks) and what info to include.
+After creating the content files, update the Azure AI Search seeding scripts 
+(`scripts/azure/*.py`) to include these new files so they are indexed. Add tests 
+to validate that each file has the required fields and keywords (e.g. ensuring 
+“AI-900” appears in certification_mapping). Also update the Foundry IQ adapter 
+code to recognize these sources as valid for the local demo mode.
+Ensure `.env.example` is updated with placeholders for Azure AI Search keys 
+(`AZURE_AI_SEARCH_ENDPOINT`, `AZURE_AI_SEARCH_KEY`, 
+`AZURE_AI_SEARCH_INDEX=failurelens-iq-knowledge`), and add documentation on how 
+to seed and verify these sources. Keep the style consistent with existing docs. 
+Do not commit any secrets or actual keys.
+README Snippet
+failure_taxonomy.md: Defines categories of ML failure (evaluation, data drift, leakage, bias, etc.)
+with examples. The ClassifierAgent references this taxonomy to label the root cause of a failed
+experiment.
+experiment_history.json: Contains 6 synthetic past experiments that illustrate failures. Each record
+includes metrics, logs, and tags. Agents like the RootCauseAnalyzerAgent use these examples as
+analogies when diagnosing a new failure.
+remediation_playbooks.md: Prescribes fix-it actions for each failure mode. When a failure is
+detected, the agent proposes steps from this playbook (e.g. “weight classes” or “retrain on fresh
+data”).
+microsoft_certification_mapping.md: Maps failures to training needs. For example, if an issue
+involves Azure AI Search, the agent might suggest AI-102 (Azure AI Engineer) based on this mapping.
+responsible_ai_checklist.md: Lists fairness, security, and transparency checks from Microsoft’s
+Responsible AI framework【25†L53-L62】. The agents consult this to ensure their recommendations
+follow ethical guidelines.
+manager_governance.md: Guides when to escalate issues to leadership and what summary to give.
+This helps align technical findings with business oversight.
+Agents query these indexed documents via Azure AI Search. Each contains rich metadata and citations, so
+the system can provide traced, evidence-backed answers (e.g., citing the taxonomy entry or a past
+experiment when explaining its reasoning).
+• 
+• 
+• 
+• 
+• 
+• 
+12
+
+--- Page 13 ---
+Knowledge Source Comparison
+File Name
+Purpose
+Key Fields/Content
+Example Use by Agent
+failure_taxonomy.md
+Lists ML
+failure
+categories
+& signals.
+id, title, content
+(sections on
+imbalance, drift,
+leakage, etc.)
+ClassifierAgent uses it to
+classify observed issue
+(e.g. “evaluation method
+failure”)
+experiment_history.json
+Historical
+failure
+cases.
+id, title,
+failure_category,
+metrics, logs, tags,
+timestamp
+RootCauseAnalyzerAgent
+finds similar past
+experiment to explain
+current failure
+remediation_playbooks.md
+Step-by-
+step fixes
+for each
+failure.
+id, title, steps/
+suggestions (e.g.
+“Use cross-
+validation”)
+Agents propose
+remedies by quoting the
+relevant plan from this
+file
+microsoft_certification_mapping.md
+Links issues
+to certs.
+id, issue_description,
+recommended_cert
+CoachAgent or
+AdviserAgent suggests
+training (e.g. “Consider
+AI-102”)
+responsible_ai_checklist.md
+Responsible
+AI best
+practices.
+id, checklist items per
+principle
+All agents ensure
+outputs meet these
+checks; may cite
+checklist to justify ethics
+manager_governance.md
+Escalation
+criteria &
+report
+outline.
+id,
+escalation_conditions,
+summary_template
+If high risk, agent adds
+manager summary fields
+from here (e.g. business
+impact).
+13
+

@@ -7,16 +7,33 @@ from backend.core.config import Settings
 
 
 @pytest.mark.anyio
-async def test_demo_readiness_endpoint_works():
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/readiness")
-    payload = response.json()
-    assert response.status_code == 200
-    assert payload["status"] == "demo_ready"
-    assert payload["score"] == 85
-    assert payload["checks"]["rate_limit_enabled"] is True
-    assert payload["checks"]["upload_persistence_enabled"] is True
+async def test_demo_readiness_endpoint_works(monkeypatch):
+    from backend.core.config import settings
+    from backend.azure.config import AzureConfig
+    from backend.services.foundry_iq_local_adapter import FoundryIQLocalAdapter
+
+    orig_mode = settings.APP_MODE
+    orig_config = app.state.azure_config
+    orig_provider = app.state.iq_provider
+
+    monkeypatch.setattr(settings, "APP_MODE", "demo")
+    app.state.azure_config = AzureConfig(app_mode="demo")
+    app.state.iq_provider = FoundryIQLocalAdapter()
+
+    try:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/readiness")
+        payload = response.json()
+        assert response.status_code == 200
+        assert payload["status"] == "demo_ready"
+        assert payload["score"] == 85
+        assert payload["checks"]["rate_limit_enabled"] is True
+        assert payload["checks"]["upload_persistence_enabled"] is True
+    finally:
+        monkeypatch.setattr(settings, "APP_MODE", orig_mode)
+        app.state.azure_config = orig_config
+        app.state.iq_provider = orig_provider
 
 
 def test_production_missing_auth_and_azure_gives_recommendations():

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { reasoningSteps } from "../data/mockData";
 import { streamAnalysis } from "../api/client";
 
-type VisibleStep = (typeof reasoningSteps)[number];
+type VisibleStep = Record<string, any>;
 
 export function useSSEStream(enabled: boolean, experimentId: string, fallbackMode: boolean) {
   const [visibleSteps, setVisibleSteps] = useState<VisibleStep[]>(reasoningSteps);

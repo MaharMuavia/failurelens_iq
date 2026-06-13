@@ -28,8 +28,49 @@ jobs:
       - name: Verify .env is not committed
         run: python -c "from pathlib import Path; assert not Path('.env').exists(), '.env file must not be committed to repository'"
 
+      - name: Check for real-looking API keys
+        run: |
+          python -c "
+          import re, sys, os
+          from pathlib import Path
+          
+          pattern = re.compile(r'(api_key|openai_key|foundry_key|secret|password)\s*=\s*[\'\"]?[a-zA-Z0-9-]{32,}[\'\"]?', re.IGNORECASE)
+          sk_pattern = re.compile(r'sk-[a-zA-Z0-9-]{32,}')
+          
+          root = Path('.')
+          failed = False
+          ignored = {'.env', '.env.local', 'node_modules', '.git', '.pytest_cache', '__pycache__', 'package-lock.json', 'package.json'}
+          
+          for p in root.rglob('*'):
+              if p.name in ('ci.yml', 'test_no_secrets_committed.py', 'test_foundry_openai_client.py'):
+                  continue
+              if any(part in ignored for part in p.parts):
+                  continue
+              if not p.is_file():
+                  continue
+              try:
+                  content = p.read_text(encoding='utf-8')
+              except:
+                  continue
+              
+              for line_num, line in enumerate(content.splitlines(), 1):
+                  # Check pattern
+                  for match in pattern.finditer(line):
+                      val = match.group(0)
+                      if not any(x in val.lower() for x in ['change-me', 'paste', 'placeholder', 'your_api_key', 'example', 'secret_here', 'your_key', 'mock', 'fake']):
+                          print(f'Possible API key found in {p}:{line_num}: {line.strip()[:50]}')
+                          failed = True
+                  if sk_pattern.search(line) and not any(x in line.lower() for x in ['example', 'placeholder', 'mock', 'fake']):
+                      print(f'Possible OpenAI key found in {p}:{line_num}: {line.strip()[:50]}')
+                      failed = True
+          if failed:
+              print('CI Check Failed: Real-looking API keys detected in committed files!')
+              sys.exit(1)
+          print('No real-looking API keys found.')
+          "
+
       - name: Check README for local file links
-        run: python -c "from pathlib import Path; text=Path('README.md').read_text(encoding='utf-8'); assert 'file:///' not in text"
+        run: python -c "from pathlib import Path; text=Path('README.md').read_text(encoding='utf-8'); assert 'file:///' not in text; assert 'Permalink:' not in text"
 
       - name: Verify architecture diagram exists
         run: python -c "from pathlib import Path; assert Path('docs/ARCHITECTURE_DIAGRAM.md').exists(); assert Path('docs/architecture-diagram.mmd').exists()"

@@ -1,0 +1,175 @@
+[
+  {
+    "id": "exp-001",
+    "title": "High Accuracy, No Recall (Imbalanced Class)",
+    "source_type": "experiment_history",
+    "permission_scope": "demo",
+    "failure_category": "evaluation_methodology",
+    "content": "A loan default model achieved 96% accuracy on a dataset with only 5% defaulters. The minority F1 score was 0.02 (no defaults correctly predicted). Random train/test split masked the imbalance issue. This indicates misuse of accuracy on an imbalanced dataset [14†L310-L314][32†L223-L230].",
+    "metrics": {
+      "accuracy": 0.96,
+      "precision": 0.50,
+      "recall": 0.02,
+      "f1_score": 0.04
+    },
+    "preprocessing_steps": [
+      "Standard scaling",
+      "One-hot encode categorical features"
+    ],
+    "error_logs": [
+      "Warning: Imbalanced data detected (5% minority class).",
+      "Model failed to predict any minority instances."
+    ],
+    "drift_indicators": [],
+    "timestamp": "2026-05-10T09:15:00Z",
+    "citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-001",
+    "tags": [
+      "accuracy_trap",
+      "class_imbalance",
+      "loan_default"
+    ],
+    "agent_usage_notes": "The RootCauseAnalyzerAgent references this past experiment when evaluating models with high overall accuracy but low minority subgroup performance."
+  },
+  {
+    "id": "exp-002",
+    "title": "Target Leakage via Date Feature",
+    "source_type": "experiment_history",
+    "permission_scope": "demo",
+    "failure_category": "data_leakage",
+    "content": "A stock prediction model using historical data achieved 98% accuracy. Investigation found a date feature including future timestamps, which the model used to 'cheat' on test data. When date was removed, accuracy dropped to 70%. Such high accuracy strongly suggests target leakage [33†L9-L16].",
+    "metrics": {
+      "accuracy": 0.98,
+      "precision": 0.97,
+      "recall": 0.99
+    },
+    "preprocessing_steps": [
+      "Dropped irrelevant ID columns"
+    ],
+    "error_logs": [
+      "Detected future-date feature in training set."
+    ],
+    "drift_indicators": [],
+    "timestamp": "2026-04-20T14:30:00Z",
+    "citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-002",
+    "tags": [
+      "data_leakage",
+      "date_feature",
+      "stock_prediction"
+    ],
+    "agent_usage_notes": "Agents check this to compare feature sets and timestamps, flag date-based leakage, and recommend temporal validation splitting."
+  },
+  {
+    "id": "exp-003",
+    "title": "Validation Split Missed Data Drift",
+    "source_type": "experiment_history",
+    "permission_scope": "demo",
+    "failure_category": "data_drift",
+    "content": "A sales forecast model was trained on last year’s data and tested on two-month-old data. After deployment, 3 months later, prediction error spiked by 15%. Retraining with recent data fixed the issue. This indicates natural data drift over time [43†L119-L127].",
+    "metrics": {
+      "accuracy": 0.85,
+      "mse": 0.15
+    },
+    "preprocessing_steps": [
+      "Normalized pricing features"
+    ],
+    "error_logs": [
+      "Alert: Model MSE increased 12% relative to baseline."
+    ],
+    "drift_indicators": [
+      "feature_drift: customer_churn_rate",
+      "covariate_shift: region_demographics"
+    ],
+    "timestamp": "2026-05-01T08:00:00Z",
+    "citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-003",
+    "tags": [
+      "data_drift",
+      "time_series",
+      "sales_forecast"
+    ],
+    "agent_usage_notes": "The ExperimentHistorianAgent references this to compare current feature drifts and recommend monitoring thresholds."
+  },
+  {
+    "id": "exp-004",
+    "title": "Overfitting Detected by Sharp Accuracy Drop",
+    "source_type": "experiment_history",
+    "permission_scope": "demo",
+    "failure_category": "overfitting",
+    "content": "An image classification model with many layers reached 99% training accuracy but only 65% on validation. The model likely memorized the training set. Adding regularization and early stopping are recommended to prevent overfitting [32†L180-L188].",
+    "metrics": {
+      "train_accuracy": 0.99,
+      "validation_accuracy": 0.65
+    },
+    "preprocessing_steps": [
+      "Image resizing",
+      "Data augmentation enabled"
+    ],
+    "error_logs": [
+      "TensorFlow warning: No weight decay in model layers."
+    ],
+    "drift_indicators": [],
+    "timestamp": "2026-05-05T16:45:00Z",
+    "citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-004",
+    "tags": [
+      "overfitting",
+      "deep_learning",
+      "image_classification"
+    ],
+    "agent_usage_notes": "Used by the RootCauseAnalyzerAgent to analyze train vs. validation score splits and suggest regularization parameters."
+  },
+  {
+    "id": "exp-005",
+    "title": "Noisy Labels Impact",
+    "source_type": "experiment_history",
+    "permission_scope": "demo",
+    "failure_category": "data_quality",
+    "content": "A sentiment analysis model trained on crowd-sourced labels had 88% accuracy. Manual review showed 10% label noise (mislabelled reviews). Cleaning labels and retraining improved accuracy to 95%. This shows data quality issues (noisy labels) can mask true performance.",
+    "metrics": {
+      "accuracy": 0.88,
+      "f1_score": 0.87
+    },
+    "preprocessing_steps": [
+      "Tokenization",
+      "Removed stopwords"
+    ],
+    "error_logs": [
+      "Data check: Label consistency rate = 90%."
+    ],
+    "drift_indicators": [],
+    "timestamp": "2026-04-25T11:20:00Z",
+    "citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-005",
+    "tags": [
+      "label_noise",
+      "nlp",
+      "sentiment_analysis"
+    ],
+    "agent_usage_notes": "Used to cross-examine label quality and suggest label cleaning/auditing."
+  },
+  {
+    "id": "exp-006",
+    "title": "Fairness Issue: Subgroup Disparity",
+    "source_type": "experiment_history",
+    "permission_scope": "demo",
+    "failure_category": "fairness",
+    "content": "A hiring recommendation model had 90% overall accuracy. Responsible AI checks revealed that precision was 99% for male candidates but only 60% for females. This subgroup disparity indicates a fairness failure requiring bias mitigation (e.g. balanced data or fairness constraints) [25†L68-L77].",
+    "metrics": {
+      "overall_accuracy": 0.90,
+      "male_precision": 0.99,
+      "female_precision": 0.60
+    },
+    "preprocessing_steps": [
+      "One-hot encoded gender"
+    ],
+    "error_logs": [
+      "Fairness alert: Female subgroup precision 39% lower than overall."
+    ],
+    "drift_indicators": [],
+    "timestamp": "2026-05-15T13:30:00Z",
+    "citation": "knowledge/foundry_iq_sources/experiment_history.json#exp-006",
+    "tags": [
+      "fairness",
+      "bias",
+      "hiring_model"
+    ],
+    "agent_usage_notes": "Consulted by agents to evaluate subgroup fairness risks and recommend post-processing mitigations or metrics (e.g., equalized odds)."
+  }
+]

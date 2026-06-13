@@ -1,0 +1,12 @@
+{
+  "experiment": {
+    "experiment_id": "lr-leakage-002",
+    "model": "LogisticRegression",
+    "train_accuracy": 0.99,
+    "validation_accuracy": 0.98,
+    "test_accuracy": 0.52,
+    "dataset_size": 5000,
+    "feature_count": 40,
+    "notes": "Suspiciously high training/validation scores, but poor performance on holdout test set. Timestamp-based target leak suspected."
+  }
+}

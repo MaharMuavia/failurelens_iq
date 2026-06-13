@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from time import perf_counter
 from typing import Any
 
 from backend.models.enums import AgentName, AgentStatus
-from backend.models.schemas import AgentContext, AgentTraceEntry, AuditEntry, EvidenceRef, ReasoningStep
+from backend.models.schemas import AgentContext, AgentTraceEntry, AuditEntry, EvidenceRef, IQGrounding, ReasoningStep
 from backend.utils.safety import safe_process_language
 
 
@@ -97,11 +98,25 @@ class BaseAgent:
         trace.confidence_score = confidence
         trace.confidence_factors = confidence_factors or {}
         trace.grounding_citations = grounding_citations or []
+        trace.grounding_citation_ids = [self._citation_id(item) for item in trace.grounding_citations]
         trace.grounding_refs = trace.grounding_citations
+        trace.iq_grounding = IQGrounding(
+            sources_consulted=trace.grounding_citations,
+            grounding_confidence=round(max(0.0, min(confidence, 1.0)), 4) if trace.grounding_citations else 0.0,
+            relevant_excerpts=trace.grounding_citations[:3],
+            retrieval_method="tfidf_cosine" if trace.grounding_citations else "none",
+        )
         trace.input_summary = f"{ctx.experiment.experiment_id}: {safe_process_language(ctx.experiment.failure_observation)[:220]}"
         trace.findings = [step.finding for step in reasoning_steps]
         trace.uncertainty = sorted({item for step in reasoning_steps for item in step.uncertainty} | set(trace.counter_evidence))
         trace.recommended_next_actions = [step.next_action for step in reasoning_steps if step.next_action]
+        
+        # Populate Phase 7 trace requirements
+        trace.citation_ids = trace.grounding_citation_ids
+        trace.evidence_used = trace.key_evidence
+        trace.next_action = trace.recommended_next_actions
+        trace.grounding_source = trace.grounding_citations[0] if trace.grounding_citations else "local_foundry_iq_adapter"
+
         audit = self.add_audit(
             "completed",
             f"{self.name.value} reviewed {ctx.experiment.experiment_id}",
@@ -181,3 +196,9 @@ class BaseAgent:
             output_summary=safe_process_language(output_summary),
             duration_ms=duration_ms,
         )
+
+    def _citation_id(self, citation: str) -> str:
+        if "#" in citation:
+            return citation.rsplit("#", 1)[-1]
+        stem = Path(citation).stem
+        return stem or citation

@@ -1,0 +1,12 @@
+{
+  "experiment": {
+    "experiment_id": "rf-overfit-001",
+    "model": "RandomForestClassifier",
+    "train_accuracy": 0.97,
+    "validation_accuracy": 0.61,
+    "test_accuracy": 0.59,
+    "dataset_size": 2000,
+    "feature_count": 120,
+    "notes": "No cross-validation, no feature selection, default hyperparameters."
+  }
+}

@@ -1,0 +1,1 @@
+# FailureLens IQ App initialization

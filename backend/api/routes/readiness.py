@@ -88,23 +88,33 @@ def build_readiness_report(config: Settings, integrations: dict[str, bool]) -> d
 
     if config.APP_MODE != "production":
         status = "demo_ready"
-        score = 85
+        score = 88 if config.MODEL_PROVIDER == "openai" and config.OPENAI_API_KEY else 85
     else:
         has_search = checks["azure_ai_search_configured"]
         has_openai = checks["azure_openai_configured"]
         has_cosmos_blob = checks["cosmos_enabled"] and checks["blob_enabled"]
-        status = "azure_ready" if has_search else "needs_configuration"
+        status = "azure_ready" if has_search and has_openai else "needs_configuration"
         if has_search and has_openai and has_cosmos_blob:
             score = 98
         elif has_search and has_openai:
             score = 95
-        elif has_search:
+        elif has_openai:
             score = 90
+        elif has_search:
+            score = 88
         else:
             score = 68
 
     is_live_azure = status == "azure_ready"
-    proof_level = "live_azure" if is_live_azure else "local_demo_fallback"
+    proof_level = (
+        "live_azure_foundry"
+        if is_live_azure
+        else "openai_fallback_with_foundry_adapter"
+        if config.MODEL_PROVIDER == "openai" and config.OPENAI_API_KEY
+        else "foundry_adapter_ready"
+        if config.APP_MODE == "production"
+        else "local_demo_fallback"
+    )
 
     return {
         "status": status,
@@ -116,9 +126,11 @@ def build_readiness_report(config: Settings, integrations: dict[str, bool]) -> d
             "implemented": True,
             "implementation": "Azure AI Search grounded retrieval connected to reasoning agents",
             "proof_level": proof_level,
+            "live_microsoft_iq": is_live_azure,
+            "active_reasoning_provider": config.MODEL_PROVIDER,
             **({"honest_limitation": "Demo mode uses local grounding; Azure AI Search is not connected."} if not is_live_azure else {}),
             "proof": {
-                "active_iq_provider": "AzureFoundryIQProvider" if is_live_azure else "LocalIQProvider",
+                "active_iq_provider": "AzureFoundryIQProvider" if is_live_azure else "FoundryIQLocalAdapter",
                 "azure_ai_search_configured": checks["azure_ai_search_configured"],
             },
         },

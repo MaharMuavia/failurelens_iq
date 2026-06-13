@@ -6,6 +6,10 @@ type EvidenceTableProps = {
 };
 
 export function EvidenceTable({ experiment }: EvidenceTableProps) {
+  const driftIndicators = Array.isArray(experiment.drift_indicators) ? experiment.drift_indicators : [];
+  const dataQualitySignals = Array.isArray(experiment.data_quality_signals) ? experiment.data_quality_signals : [];
+  const suspectedLeakageColumns = Array.isArray(experiment.suspected_leakage_columns) ? experiment.suspected_leakage_columns : [];
+
   const rows = [
     {
       label: "Observed failure",
@@ -18,9 +22,9 @@ export function EvidenceTable({ experiment }: EvidenceTableProps) {
         "metrics",
         "baseline_metrics",
         "class_balance",
-        ...experiment.drift_indicators,
-        ...experiment.data_quality_signals,
-        ...experiment.suspected_leakage_columns
+        ...driftIndicators,
+        ...dataQualitySignals,
+        ...suspectedLeakageColumns
       ]
         .filter(Boolean)
         .slice(0, 6)

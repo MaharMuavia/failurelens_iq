@@ -2,6 +2,8 @@ import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { API_BASE } from "../api/client";
 import { demoErrorMessage, VIDEO_DEMO_MODE } from "../config/demoMode";
 
+const DEBUG_LOGS = import.meta.env.VITE_DEBUG_LOGS === "true";
+
 interface Props {
   children: ReactNode;
 }
@@ -22,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    if (import.meta.env.DEV) {
+    if (DEBUG_LOGS) {
       console.error("ErrorBoundary caught an error:", error, errorInfo);
     }
   }
@@ -41,11 +43,11 @@ export class ErrorBoundary extends Component<Props, State> {
           alignItems: "center",
           justifyContent: "center",
           minHeight: "100vh",
-          backgroundColor: "#0d1117",
-          color: "#c9d1d9",
+          backgroundColor: "#f8fafc",
+          color: "#334155",
           fontFamily: "Inter, system-ui, sans-serif"
         }}>
-          <h1 style={{ color: "#f85149" }}>Something went wrong in the demo dashboard.</h1>
+          <h1 style={{ color: "#dc2626" }}>Something went wrong in the demo dashboard.</h1>
           <p style={{ margin: "1rem 0" }}>
             An unexpected client-side error occurred. You can reload the page or check the backend health.
           </p>
@@ -54,7 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleReload}
               style={{
                 padding: "0.5rem 1rem",
-                backgroundColor: "#238636",
+                backgroundColor: "#0078d4",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
@@ -70,9 +72,9 @@ export class ErrorBoundary extends Component<Props, State> {
               rel="noopener noreferrer"
               style={{
                 padding: "0.5rem 1rem",
-                backgroundColor: "#21262d",
-                color: "#58a6ff",
-                border: "1px solid #30363d",
+                backgroundColor: "#ffffff",
+                color: "#0078d4",
+                border: "1px solid #cbd5e1",
                 borderRadius: "4px",
                 textDecoration: "none",
                 fontWeight: "bold"
@@ -85,12 +87,12 @@ export class ErrorBoundary extends Component<Props, State> {
             <pre style={{
               marginTop: "2rem",
               padding: "1rem",
-              backgroundColor: "#161b22",
-              border: "1px solid #30363d",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e2e8f0",
               borderRadius: "4px",
               maxWidth: "80%",
               overflowX: "auto",
-              color: "#ff7b72"
+              color: "#dc2626"
             }}>
               {demoErrorMessage(this.state.error.toString())}
             </pre>

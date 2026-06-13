@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FailureLens IQ Report: PROMPT-20260613-081440</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.08);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent: #22d3ee;
+            --accent-glow: rgba(34, 211, 238, 0.15);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+        }
+        /* Sidebar styling */
+        aside {
+            width: var(--sidebar-width);
+            background-color: rgba(15, 23, 42, 0.6);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 8px;
+        }
+        .brand span {
+            color: var(--accent);
+        }
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            list-style: none;
+        }
+        .nav-link {
+            display: block;
+            padding: 10px 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background-color: var(--bg-card-hover);
+            color: var(--text-main);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+        /* Main layout styling */
+        main {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 40px;
+            max-width: 1100px;
+        }
+        header {
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .report-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .report-subtitle {
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+        .metadata-badge {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+        /* Section styling */
+        .report-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .report-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        /* Cards */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(12px);
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        /* Prompt block */
+        .prompt-block {
+            background-color: rgba(34, 211, 238, 0.05);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 16px;
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+        /* Code pre */
+        pre {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        /* Citations and Agents */
+        .citation-card, .agent-card, .question-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .citation-header, .agent-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .citation-id {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .citation-tag, .agent-status {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .status-completed, .status-success, .status-active {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+        .status-waiting, .status-pending {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+        .status-human-review {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+        .citation-title {
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+        }
+        .citation-excerpt {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .citation-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        /* Collapsible details */
+        .agent-trace-details {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 12px;
+            background-color: var(--bg-card);
+            overflow: hidden;
+        }
+        .agent-trace-summary {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            outline: none;
+            user-select: none;
+        }
+        .agent-trace-summary:hover {
+            background-color: var(--bg-card-hover);
+        }
+        .agent-summary-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .agent-trace-content {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+        .trace-step {
+            border-left: 2px solid var(--accent);
+            padding-left: 14px;
+            margin-bottom: 16px;
+        }
+        .trace-step-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .step-desc, .step-finding {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+        .trace-evidence {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            padding-left: 18px;
+        }
+        /* Questions */
+        .question-card {
+            border-left: 4px solid var(--accent);
+        }
+        .question-num {
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+        .question-text {
+            font-weight: 600;
+            margin: 6px 0 12px 0;
+        }
+        .question-options {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .question-options li {
+            padding: 8px 12px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .question-options li.correct-option {
+            border-color: var(--success);
+            background-color: rgba(16, 185, 129, 0.05);
+            font-weight: 600;
+        }
+        .question-explanation {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            padding-top: 8px;
+        }
+        /* Progress bars / meter */
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent);
+            border-radius: 9999px;
+        }
+        .no-data {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .flex {
+            display: flex;
+        }
+        .flex-between {
+            justify-content: space-between;
+        }
+        .list-unstyled {
+            list-style: none;
+        }
+        .gap-10 {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .gap-6 {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="brand">
+            <span>FailureLens</span> IQ
+        </div>
+        <ul class="nav-links">
+            <li><a class="nav-link active" onclick="showSection('overview', this)">Dashboard Overview</a></li>
+            <li><a class="nav-link" onclick="showSection('prompt-exp', this)">Prompt & Experiment</a></li>
+            <li><a class="nav-link" onclick="showSection('diagnosis', this)">Failure Diagnosis</a></li>
+            <li><a class="nav-link" onclick="showSection('workflow', this)">Agent Workflow</a></li>
+            <li><a class="nav-link" onclick="showSection('grounding', this)">Grounded Evidence</a></li>
+            <li><a class="nav-link" onclick="showSection('remediation', this)">Remediation & Certs</a></li>
+            <li><a class="nav-link" onclick="showSection('proof', this)">Proof & Disclaimers</a></li>
+        </ul>
+    </aside>
+
+    <main>
+        <header>
+            <div class="report-title-row">
+                <div>
+                    <h1>FailureLens IQ Report</h1>
+                    <div class="report-subtitle">Learning Intelligence from Failed ML Experiments</div>
+                </div>
+                <div class="metadata-badge">
+                    Run ID: 04573506-fcdf-443c-9ec9-afa425403b6c
+                </div>
+            </div>
+            <div style="margin-top: 14px; font-size: 0.8rem; color: var(--text-muted);">
+                Generated on: <strong>2026-06-13 08:15:10 UTC</strong>
+            </div>
+        </header>
+
+        <!-- OVERVIEW SECTION -->
+        <section id="overview" class="report-section active">
+            <h2>Dashboard Overview</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">Executive Summary</div>
+                    <p style="line-height: 1.6; font-size: 0.95rem;">
+                        Churn model hit 93% accuracy yet minority F1 collapsed to 0.14. Root cause: 80/20 train-test split on 90/10 imbalanced data let accuracy hide poor minority-class performance.
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Analysis Gate</div>
+                    <div class="gap-10">
+                        <div>
+                            <span>Overall Calibrated Confidence:</span>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: 69%"></div>
+                            </div>
+                            <div style="text-align: right; font-size: 0.8rem; margin-top: 4px; color: var(--accent);">
+                                <strong>69%</strong>
+                            </div>
+                        </div>
+                        <div>
+                            <span>Gate Decision:</span>
+                            <span class="agent-summary-badge status-success" style="margin-left: 8px;">
+                                PASSED
+                            </span>
+                        </div>
+                        <div>
+                            <span>Human Review Required:</span>
+                            <strong style="color: var(--success); font-size: 0.9rem;">
+                                No
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">Manager Briefing</div>
+                    <div class="gap-10" style="font-size: 0.9rem;">
+                        <p><strong>Business Risk:</strong> Medium risk: model is failing to generalise on minority sub-classes.</p>
+                        <p><strong>Required Engineering Action:</strong> Review the highest-frequency team process gap and add a sprint-level learning check.</p>
+                        <p><strong>Recommended Upskilling:</strong> improving</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Recommended Intervention</div>
+                    <div class="gap-6" style="font-size: 0.9rem;">
+                        <p><strong>Microsoft Certification:</strong> DP-100: Designing and Implementing a Data Science Solution on Azure (DP-100)</p>
+                        <p><strong>Skill Domain:</strong> ML evaluation and model operations</p>
+                        <p><strong>Remediation:</strong> Rebuild the PROMPT-20260613-081440 decision using the cited evidence, then document what changed in the validation or review checklist.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROMPT & EXPERIMENT SECTION -->
+        <section id="prompt-exp" class="report-section">
+            <h2>Original Prompt</h2>
+            <div class="prompt-block">
+                "Analyze a churn model that reached 93% accuracy but minority F1 dropped to 0.14. Find the root cause."
+            </div>
+
+            <h2>Prompt Extraction Metadata</h2>
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="gap-10" style="font-size: 0.9rem;">
+                    <p><strong>Parser Type:</strong> Deterministic Local Rules</p>
+                    <p><strong>Parser Confidence:</strong> 80%</p>
+                    <p><strong>Explicitly Extracted Fields:</strong> <code style="color: var(--accent);">dataset_name, experiment_id, failure_observation, failure_symptoms, metrics, outcome, project_name, role, target, team_id, timestamp</code></p>
+                    <p><strong>Assumed/Generated Fields:</strong> <code style="color: var(--warning);">baseline_metrics, class_balance, current_certifications, data_quality_signals, deployment_context, drift_indicators, feature_set, model_type, preprocessing_steps, suspected_leakage_columns, training_config, validation_strategy</code></p>
+                </div>
+            </div>
+
+            <h2>Generated Experiment Log</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Experiment ID</td><td>PROMPT-20260613-081440</td></tr>
+                        <tr><td>Project Name</td><td>Customer Churn Prediction</td></tr>
+                        <tr><td>Model Type</td><td>XGBoost Classifier</td></tr>
+                        <tr><td>Dataset Name</td><td>customer_churn_data</td></tr>
+                        <tr><td>Validation Strategy</td><td>Train-Test Split (80/20)</td></tr>
+                        <tr><td>Class Balance</td><td>90/10</td></tr>
+                        <tr><td>Failure Observation</td><td>Analyze a churn model that reached 93% accuracy but minority F1 dropped to 0.14. Find the root cause.</td></tr>
+                        <tr><td>Engineer Notes</td><td>Generated from user prompt with assumptions.</td></tr>
+                    </tbody>
+                </table>
+
+                <details style="margin-top: 16px;">
+                    <summary style="cursor: pointer; color: var(--accent); font-weight: 600; outline: none;">Show Full JSON Payload</summary>
+                    <pre style="margin-top: 10px;"><code>{
+  &quot;experiment_id&quot;: &quot;PROMPT-20260613-081440&quot;,
+  &quot;team_id&quot;: &quot;demo-team&quot;,
+  &quot;project_name&quot;: &quot;Customer Churn Prediction&quot;,
+  &quot;role&quot;: &quot;ML Engineer&quot;,
+  &quot;model_type&quot;: &quot;XGBoost Classifier&quot;,
+  &quot;dataset_name&quot;: &quot;customer_churn_data&quot;,
+  &quot;pipeline_stage&quot;: &quot;validation&quot;,
+  &quot;target&quot;: &quot;churn_status&quot;,
+  &quot;validation_strategy&quot;: &quot;Train-Test Split (80/20)&quot;,
+  &quot;class_balance&quot;: &quot;90/10&quot;,
+  &quot;preprocessing_steps&quot;: [
+    &quot;StandardScaler&quot;,
+    &quot;OneHotEncoder&quot;
+  ],
+  &quot;feature_set&quot;: [
+    &quot;feature_1&quot;,
+    &quot;feature_2&quot;,
+    &quot;feature_3&quot;
+  ],
+  &quot;metrics&quot;: {
+    &quot;accuracy&quot;: 0.93,
+    &quot;minority_f1&quot;: 0.14
+  },
+  &quot;baseline_metrics&quot;: {
+    &quot;accuracy&quot;: 0.9500000000000001,
+    &quot;minority_f1&quot;: 0.65
+  },
+  &quot;error_logs&quot;: [],
+  &quot;drift_indicators&quot;: [],
+  &quot;data_quality_signals&quot;: [],
+  &quot;training_config&quot;: {
+    &quot;max_depth&quot;: 6,
+    &quot;learning_rate&quot;: 0.1
+  },
+  &quot;deployment_context&quot;: {
+    &quot;environment&quot;: &quot;staging&quot;
+  },
+  &quot;failure_symptoms&quot;: [
+    &quot;low_minority_f1&quot;
+  ],
+  &quot;failure_observation&quot;: &quot;Analyze a churn model that reached 93% accuracy but minority F1 dropped to 0.14. Find the root cause.&quot;,
+  &quot;suspected_leakage_columns&quot;: [],
+  &quot;engineer_notes&quot;: &quot;Generated from user prompt with assumptions.&quot;,
+  &quot;current_certifications&quot;: [],
+  &quot;outcome&quot;: &quot;failure&quot;,
+  &quot;failure_category_label&quot;: null,
+  &quot;timestamp&quot;: &quot;2026-06-13T08:14:40.892198Z&quot;,
+  &quot;minority_pct&quot;: 10.0,
+  &quot;minority_f1&quot;: 0.14,
+  &quot;reported_metric&quot;: &quot;accuracy&quot;,
+  &quot;metric_degradation_score&quot;: 0.7846153846153846,
+  &quot;has_error_logs&quot;: false,
+  &quot;has_drift_indicators&quot;: false,
+  &quot;has_leakage_signal&quot;: false,
+  &quot;has_bias_language&quot;: false
+}</code></pre>
+                </details>
+            </div>
+        </section>
+
+        <!-- FAILURE DIAGNOSIS SECTION -->
+        <section id="diagnosis" class="report-section">
+            <h2>Failure Diagnosis</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">Failure Classification</div>
+                    <div class="gap-10">
+                        <p><strong>Inferred Failure Category:</strong> <span style="font-size: 1.1rem; color: var(--accent); font-weight: 700;">Evaluation Methodology Failure</span></p>
+                        <p><strong>Calibration Confidence:</strong> <strong>0.82</strong></p>
+                        <p><strong>Conflict Resolution:</strong> Selected Evaluation Methodology Failure by highest-priority triggered rule; conflicts=none.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Root Cause Analysis</div>
+                    <div class="gap-10">
+                        <p><strong>Root Cause:</strong> PROMPT-20260613-081440 used Train-Test Split (80/20) validation with class_balance=90/10; accuracy=0.93 hid minority_f1=0.14, so the evaluation method did not measure the failure mode that mattered.</p>
+                        <p><strong>Violated Assumption:</strong> <em>The reported accuracy represented operational quality for the minority class.</em></p>
+                        <p><strong>Knowledge Gap:</strong> Imbalanced classification evaluation, minority F1, and stratified validation practice.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">Supporting Evidence</div>
+                    <ul class="gap-6" style="padding-left: 16px;">
+                        <li>class_balance=90/10 -&gt; minority class risk</li><li>accuracy=0.93 -&gt; headline metric can hide minority errors</li><li>minority_f1=0.14 -&gt; minority performance weakness</li><li>validation_strategy=Train-Test Split (80/20) -&gt; holdout/non-stratified evidence</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <div class="card-title">Counter Evidence & Uncertainty</div>
+                    <p><strong>Counter Evidence:</strong></p>
+                    <ul class="gap-6" style="padding-left: 16px; margin-bottom: 12px;">
+                        <li>suspected_leakage_columns=[] -&gt; no direct leakage column evidence</li><li>drift_indicators=[] -&gt; no direct deployment drift evidence</li>
+                    </ul>
+                    <p><strong>Uncertainties:</strong></p>
+                    <ul class="gap-6" style="padding-left: 16px;">
+                        <li>Evidence coverage check: 4 direct evidence items were available.</li><li>Planner conflict check: planner agreement is 1.0.</li><li>Competing category check: conflicts are [].</li><li>IQ grounding strength check: top relevance is 0.000.</li><li>Confidence calibration check: confidence 0.726 compared with threshold 0.400.</li><li>Human review threshold check: review required is False.</li><li>Weak IQ grounding detected; confidence remains conservative.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2>Failure Metrics Degradation</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Current Value</th>
+                            <th>Baseline Value</th>
+                            <th>Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+            <tr>
+                <td>accuracy</td>
+                <td>0.93</td>
+                <td>0.9500000000000001</td>
+                <td class="negative">-0.0200</td>
+            </tr>
+            
+            <tr>
+                <td>minority_f1</td>
+                <td>0.14</td>
+                <td>0.65</td>
+                <td class="negative">-0.5100</td>
+            </tr>
+            
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- AGENT WORKFLOW SECTION -->
+        <section id="workflow" class="report-section">
+            <h2>Agent Execution Timeline</h2>
+            <div class="gap-10" style="margin-bottom: 32px;">
+                
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">ExperimentIntakeAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Validate the experiment packet and summarize available evidence.</div>
+                <div class="agent-meta">Confidence: <strong>1.0</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> Missing fields: none. Signals detected: [&#x27;evaluation methodology&#x27;].</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">FailureClassifierAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Classify the failed run into a repeatable ML failure category.</div>
+                <div class="agent-meta">Confidence: <strong>0.82</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> 1 rules triggered. Selected Evaluation Methodology Failure by highest-priority triggered rule; conflicts=none.</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">RootCauseAnalyzerAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Explain the likely root cause with evidence, counter-evidence, and calibrated confidence.</div>
+                <div class="agent-meta">Confidence: <strong>0.7263</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> Evaluation Methodology Failure Analyze a churn model that reached 93% accuracy but minority F1 dropped to 0.14. Find the root cause. Train-Test Split (80/20) 90/10 minority f1 fair Top relevance 0.000.</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">ExperimentHistorianAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Find similar historical failures and convert them into team memory.</div>
+                <div class="agent-meta">Confidence: <strong>0.85</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> 5 similar historical experiments returned. Both used accuracy as primary metric on imbalanced data. (5 similar runs)</p>
+                    <p><strong>Next Actions:</strong> Use similar runs as grounding for the remediation plan. Attach the repeated pattern to the manager summary.</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">CertificationEvaluatorAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Map the failure to Microsoft certification skills and learning readiness.</div>
+                <div class="agent-meta">Confidence: <strong>0.32</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> Top source was dp100_skill_guide.md. Selected DP-100.</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">CertificationEvaluatorAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Generate evidence-bound readiness questions for the recommended learning path.</div>
+                <div class="agent-meta">Confidence: <strong>0.78</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> conceptual, diagnostic, application, and code_review created. Questions reference PROMPT-20260613-081440.</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">PrescriptiveCoachAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Create a remediation plan that is tied to the failure evidence and team context.</div>
+                <div class="agent-meta">Confidence: <strong>0.8262999999999999</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> 0 playbook hits returned. Plan type balanced from load=None and high_risk=False.</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">IntegrationManagerAgent</span>
+                    <span class="agent-status status-completed">completed</span>
+                </div>
+                <div class="agent-role">Assemble manager-ready learning intelligence and audit summaries.</div>
+                <div class="agent-meta">Confidence: <strong>0.66</strong></div>
+                <div class="agent-body">
+                    <p><strong>Findings:</strong> 0 experiments found for demo-team. {}</p>
+                    <p><strong>Next Actions:</strong> None</p>
+                </div>
+            </div>
+            
+            </div>
+
+            <h2>Agent Detailed Reasoning Trace</h2>
+            <div class="gap-6">
+                
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>ExperimentIntakeAgent (Validate the experiment packet and summarize available evidence.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.65</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Checked critical fields</p>
+                        <p class="step-finding"><strong>Finding:</strong> Missing fields: none.</p>
+                        <ul class='trace-evidence'><li>[IntakeAgent / metrics] metrics was reviewed for this reasoning step. (confidence: 0.65)</li><li>[IntakeAgent / baseline_metrics] baseline_metrics was reviewed for this reasoning step. (confidence: 0.65)</li><li>[IntakeAgent / feature_set] feature_set was reviewed for this reasoning step. (confidence: 0.65)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.65</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Detected evidence signals</p>
+                        <p class="step-finding"><strong>Finding:</strong> Signals detected: [&#x27;evaluation methodology&#x27;].</p>
+                        <ul class='trace-evidence'><li>[IntakeAgent / failure_observation] failure_observation was reviewed for this reasoning step. (confidence: 0.65)</li><li>[IntakeAgent / engineer_notes] engineer_notes was reviewed for this reasoning step. (confidence: 0.65)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.6000000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Loaded team context</p>
+                        <p class="step-finding"><strong>Finding:</strong> Team context loaded for demo-team.</p>
+                        <ul class='trace-evidence'><li>[IntakeAgent / team_id] team_id was reviewed for this reasoning step. (confidence: 0.6000000000000001)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>FailureClassifierAgent (Classify the failed run into a repeatable ML failure category.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.67</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Evaluated six deterministic rules</p>
+                        <p class="step-finding"><strong>Finding:</strong> 1 rules triggered.</p>
+                        <ul class='trace-evidence'><li>[ClassifierAgent / failure_observation] failure_observation was reviewed for this reasoning step. (confidence: 0.67)</li><li>[ClassifierAgent / metrics] metrics was reviewed for this reasoning step. (confidence: 0.67)</li><li>[ClassifierAgent / drift_indicators] drift_indicators was reviewed for this reasoning step. (confidence: 0.67)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.55</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Resolved category conflicts</p>
+                        <p class="step-finding"><strong>Finding:</strong> Selected Evaluation Methodology Failure by highest-priority triggered rule; conflicts=none.</p>
+                        <ul class='trace-evidence'><li>[ClassifierAgent / rules_evaluated] rules_evaluated was reviewed for this reasoning step. (confidence: 0.55)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5900000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Calculated classification confidence</p>
+                        <p class="step-finding"><strong>Finding:</strong> Classification confidence is 0.820.</p>
+                        <ul class='trace-evidence'><li>[ClassifierAgent / rules_evaluated] rules_evaluated was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>RootCauseAnalyzerAgent (Explain the likely root cause with evidence, counter-evidence, and calibrated confidence.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.6000000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Built grounded diagnostic query</p>
+                        <p class="step-finding"><strong>Finding:</strong> Evaluation Methodology Failure Analyze a churn model that reached 93% accuracy but minority F1 dropped to 0.14. Find the root cause. Train-Test Split (80/20) 90/10 minority f1 fair</p>
+                        <ul class='trace-evidence'><li>[DiagnosticAgent / failure_observation] failure_observation was reviewed for this reasoning step. (confidence: 0.6000000000000001)</li><li>[DiagnosticAgent / classification] classification was reviewed for this reasoning step. (confidence: 0.6000000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.63</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Retrieved local IQ grounding</p>
+                        <p class="step-finding"><strong>Finding:</strong> Top relevance 0.000.</p>
+                        <ul class='trace-evidence'><li>[DiagnosticAgent / knowledge_index] knowledge_index was reviewed for this reasoning step. (confidence: 0.63)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.63</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Composed root-cause candidate</p>
+                        <p class="step-finding"><strong>Finding:</strong> PROMPT-20260613-081440 used Train-Test Split (80/20) validation with class_balance=90/10; accuracy=0.93 hid minority_f1=0.14, so the evaluation method did not measure the failure mode that mattered.</p>
+                        <ul class='trace-evidence'><li>[DiagnosticAgent / metrics] metrics was reviewed for this reasoning step. (confidence: 0.63)</li><li>[DiagnosticAgent / validation_strategy] validation_strategy was reviewed for this reasoning step. (confidence: 0.63)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 4: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.53</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Checked counter-evidence</p>
+                        <p class="step-finding"><strong>Finding:</strong> suspected_leakage_columns=[] -&gt; no direct leakage column evidence; drift_indicators=[] -&gt; no direct deployment drift evidence</p>
+                        <ul class='trace-evidence'><li>[DiagnosticAgent / baseline_metrics] baseline_metrics was reviewed for this reasoning step. (confidence: 0.53)</li><li>[DiagnosticAgent / deployment_context] deployment_context was reviewed for this reasoning step. (confidence: 0.53)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 5: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.55</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Ran self-reflection checks</p>
+                        <p class="step-finding"><strong>Finding:</strong> 7 reflection notes recorded.</p>
+                        <ul class='trace-evidence'><li>[DiagnosticAgent / reflection_notes] reflection_notes was reviewed for this reasoning step. (confidence: 0.55)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 6: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.55</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Calibrated confidence against threshold</p>
+                        <p class="step-finding"><strong>Finding:</strong> 0.726 vs 0.400.</p>
+                        <ul class='trace-evidence'><li>[DiagnosticAgent / planner_context.plan.dynamic_threshold] planner_context.plan.dynamic_threshold was reviewed for this reasoning step. (confidence: 0.55)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>ExperimentHistorianAgent (Find similar historical failures and convert them into team memory.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: EVIDENCE_CHECK</span>
+                            <span class="step-conf">Confidence: 0.63</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Compared this run with historical experiments</p>
+                        <p class="step-finding"><strong>Finding:</strong> 5 similar historical experiments returned.</p>
+                        <ul class='trace-evidence'><li>[ExperimentHistorianAgent / experiment_id] experiment_id was reviewed for this reasoning step. (confidence: 0.63)</li><li>[ExperimentHistorianAgent / metrics] metrics was reviewed for this reasoning step. (confidence: 0.63)</li><li>[ExperimentHistorianAgent / pipeline_stage] pipeline_stage was reviewed for this reasoning step. (confidence: 0.63)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.6100000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Extracted repeated failure patterns</p>
+                        <p class="step-finding"><strong>Finding:</strong> Both used accuracy as primary metric on imbalanced data. (5 similar runs)</p>
+                        <ul class='trace-evidence'><li>[ExperimentHistorianAgent / similar_historical_experiments.shared_signals] similar_historical_experiments.shared_signals was reviewed for this reasoning step. (confidence: 0.6100000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: DECISION</span>
+                            <span class="step-conf">Confidence: 0.5900000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Converted memory into a team learning gap</p>
+                        <p class="step-finding"><strong>Finding:</strong> Imbalanced classification evaluation, minority F1, and stratified validation practice.</p>
+                        <ul class='trace-evidence'><li>[ExperimentHistorianAgent / diagnosis.knowledge_gap] diagnosis.knowledge_gap was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li><li>[ExperimentHistorianAgent / team_id] team_id was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>CertificationEvaluatorAgent (Map the failure to Microsoft certification skills and learning readiness.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.63</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Retrieved certification grounding</p>
+                        <p class="step-finding"><strong>Finding:</strong> Top source was dp100_skill_guide.md.</p>
+                        <ul class='trace-evidence'><li>[CertMapperAgent / iq_retrieval] iq_retrieval was reviewed for this reasoning step. (confidence: 0.63)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.65</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Mapped source to certification</p>
+                        <p class="step-finding"><strong>Finding:</strong> Selected DP-100.</p>
+                        <ul class='trace-evidence'><li>[CertMapperAgent / source_file] source_file was reviewed for this reasoning step. (confidence: 0.65)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5700000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Checked existing certifications</p>
+                        <p class="step-finding"><strong>Finding:</strong> Already held: False.</p>
+                        <ul class='trace-evidence'><li>[CertMapperAgent / current_certifications] current_certifications was reviewed for this reasoning step. (confidence: 0.5700000000000001)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>CertificationEvaluatorAgent (Generate evidence-bound readiness questions for the recommended learning path.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5900000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Selected four required question types</p>
+                        <p class="step-finding"><strong>Finding:</strong> conceptual, diagnostic, application, and code_review created.</p>
+                        <ul class='trace-evidence'><li>[AssessmentAgent / cert_mapping] cert_mapping was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5900000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Bound questions to experiment evidence</p>
+                        <p class="step-finding"><strong>Finding:</strong> Questions reference PROMPT-20260613-081440.</p>
+                        <ul class='trace-evidence'><li>[AssessmentAgent / experiment_id] experiment_id was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li><li>[AssessmentAgent / metrics] metrics was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5800000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Attached citations and skill domain</p>
+                        <p class="step-finding"><strong>Finding:</strong> Target certification is DP-100.</p>
+                        <ul class='trace-evidence'><li>[AssessmentAgent / cert_mapping.grounding] cert_mapping.grounding was reviewed for this reasoning step. (confidence: 0.5800000000000001)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>PrescriptiveCoachAgent (Create a remediation plan that is tied to the failure evidence and team context.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.6000000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Retrieved remediation playbook</p>
+                        <p class="step-finding"><strong>Finding:</strong> 0 playbook hits returned.</p>
+                        <ul class='trace-evidence'><li>[RemediationAgent / knowledge_index] knowledge_index was reviewed for this reasoning step. (confidence: 0.6000000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.6100000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Selected plan intensity</p>
+                        <p class="step-finding"><strong>Finding:</strong> Plan type balanced from load=None and high_risk=False.</p>
+                        <ul class='trace-evidence'><li>[RemediationAgent / team_profile] team_profile was reviewed for this reasoning step. (confidence: 0.6100000000000001)</li><li>[RemediationAgent / classification] classification was reviewed for this reasoning step. (confidence: 0.6100000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5900000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Connected plan to experiment</p>
+                        <p class="step-finding"><strong>Finding:</strong> The plan targets Evaluation Methodology Failure evidence from PROMPT-20260613-081440, especially Imbalanced classification evaluation, minority F1, and stratified validation practice..</p>
+                        <ul class='trace-evidence'><li>[RemediationAgent / diagnosis.knowledge_gap] diagnosis.knowledge_gap was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            <details class="agent-trace-details">
+                <summary class="agent-trace-summary">
+                    <span>IntegrationManagerAgent (Assemble manager-ready learning intelligence and audit summaries.)</span>
+                    <span class="agent-summary-badge status-completed">completed</span>
+                </summary>
+                <div class="agent-trace-content">
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 1: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.5900000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Aggregated team experiments</p>
+                        <p class="step-finding"><strong>Finding:</strong> 0 experiments found for demo-team.</p>
+                        <ul class='trace-evidence'><li>[ManagerAgent / team_id] team_id was reviewed for this reasoning step. (confidence: 0.5900000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 2: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.6100000000000001</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Computed failure heatmap</p>
+                        <p class="step-finding"><strong>Finding:</strong> {}</p>
+                        <ul class='trace-evidence'><li>[ManagerAgent / failure_category_label] failure_category_label was reviewed for this reasoning step. (confidence: 0.6100000000000001)</li></ul>
+                    </div>
+                    
+                    <div class="trace-step">
+                        <div class="trace-step-header">
+                            <span class="step-num">Step 3: INFERENCE</span>
+                            <span class="step-conf">Confidence: 0.55</span>
+                        </div>
+                        <p class="step-desc"><strong>Description:</strong> Detected recurring patterns</p>
+                        <p class="step-finding"><strong>Finding:</strong> No recurring category reached threshold.</p>
+                        <ul class='trace-evidence'><li>[ManagerAgent / timestamp] timestamp was reviewed for this reasoning step. (confidence: 0.55)</li><li>[ManagerAgent / failure_category_label] failure_category_label was reviewed for this reasoning step. (confidence: 0.55)</li></ul>
+                    </div>
+                    
+                </div>
+            </details>
+            
+            </div>
+        </section>
+
+        <!-- GROUNDING EVIDENCE SECTION -->
+        <section id="grounding" class="report-section">
+            <h2>Foundry IQ Grounded Evidence</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;">
+                The reasoning agents consulted the following registered Microsoft skill standards and remediation playbooks to formulate the diagnosis and recommendations.
+            </p>
+            <div class="gap-10">
+                <p class='no-data'>No grounded citations retrieved for this run.</p>
+            </div>
+        </section>
+
+        <!-- REMEDIATION & CERTS SECTION -->
+        <section id="remediation" class="report-section">
+            <h2>Remediation Plan</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">3-Day Fast Fix</div>
+                    <ul class="gap-6" style="padding-left: 16px; line-height: 1.5;">
+                        <li>Day 1: review Evaluation Methodology Failure evidence from PROMPT-20260613-081440.</li><li>Day 2: practice the DP-100 skill area with the failed experiment fields.</li><li>Day 3: add one review checklist change and inspect it with the team.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <div class="card-title">7-Day Integration Plan</div>
+                    <ul class="gap-6" style="padding-left: 16px; line-height: 1.5;">
+                        <li>Day 1: collect evidence fields and counter-evidence.</li><li>Day 2: study the grounded local IQ sections.</li><li>Day 3: rerun evaluation or review using corrected assumptions.</li><li>Day 4: pair review the reasoning trace and audit entries.</li><li>Day 5: update model card or experiment checklist.</li><li>Day 6: run a synthetic lab that mirrors the failure mode.</li><li>Day 7: manager review of learning velocity and next sprint action.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-title">Hands-on Lab Exercise</div>
+                <p style="line-height: 1.6;">Rebuild the PROMPT-20260613-081440 decision using the cited evidence, then document what changed in the validation or review checklist.</p>
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--warning);">
+                    <strong>Responsible AI note:</strong> No specific responsible AI alert triggered. Proceed with general fairness validation.
+                </div>
+            </div>
+
+            <h2>Microsoft Skill Readiness Assessment</h2>
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-title">Certification Alignment</div>
+                <p><strong>Recommended Exam:</strong> <strong>DP-100: Designing and Implementing a Data Science Solution on Azure</strong></p>
+                <p><strong>Skill Domain:</strong> ML evaluation and model operations</p>
+                <p style="margin-top: 12px;"><strong>Required Learning Path Modules:</strong></p>
+                <ul class="gap-6" style="padding-left: 16px; margin-top: 6px;">
+                    <li>Review ML evaluation and model operations concepts using local IQ citations.</li><li>Apply the concepts to PROMPT-20260613-081440 evidence fields.</li><li>Add the resulting checklist item to the next experiment review.</li>
+                </ul>
+            </div>
+
+            <h2>Practice Practice Questions</h2>
+            <div class="gap-10">
+                
+            <div class="question-card">
+                <span class="question-num">Question 1 (conceptual)</span>
+                <p class="question-text">Which concept best explains the Evaluation Methodology Failure signal in PROMPT-20260613-081440?</p>
+                <ul class="question-options">
+                    <li class='correct-option'>Review the metric against the failure mode and cited evidence.</li><li class=''>Trust the highest aggregate accuracy without slice checks.</li><li class=''>Deploy because the experiment has a model artifact.</li><li class=''>Remove audit trail entries to reduce review time.</li>
+                </ul>
+                <p class="question-explanation"><strong>Explanation:</strong> The diagnosis is tied to evidence fields and the failure mode.</p>
+            </div>
+            
+            <div class="question-card">
+                <span class="question-num">Question 2 (diagnostic)</span>
+                <p class="question-text">Which field should be inspected first for PROMPT-20260613-081440?</p>
+                <ul class="question-options">
+                    <li class='correct-option'>failure_observation</li><li class=''>logo_color</li><li class=''>frontend_route</li><li class=''>package_version</li>
+                </ul>
+                <p class="question-explanation"><strong>Explanation:</strong> The observation carries the initial diagnostic signal.</p>
+            </div>
+            
+            <div class="question-card">
+                <span class="question-num">Question 3 (application)</span>
+                <p class="question-text">What team action best preserves learning from PROMPT-20260613-081440?</p>
+                <ul class="question-options">
+                    <li class='correct-option'>Add a checklist item tied to the evidence.</li><li class=''>Hide the failed run.</li><li class=''>Use only success metrics.</li><li class=''>Skip human review for low confidence.</li>
+                </ul>
+                <p class="question-explanation"><strong>Explanation:</strong> Organizational memory improves when evidence becomes a reusable process control.</p>
+            </div>
+            
+            <div class="question-card">
+                <span class="question-num">Question 4 (code_review)</span>
+                <p class="question-text">Which code review note would help prevent repeat Evaluation Methodology Failure?</p>
+                <ul class="question-options">
+                    <li class='correct-option'>Assert the validation and feature assumptions in tests.</li><li class=''>Delete counter-evidence from the report.</li><li class=''>Use a single global metric for every case.</li><li class=''>Bypass CORS and audit logging.</li>
+                </ul>
+                <p class="question-explanation"><strong>Explanation:</strong> Tests and review gates make the learning durable.</p>
+            </div>
+            
+            </div>
+        </section>
+
+        <!-- PROOF SECTION -->
+        <section id="proof" class="report-section">
+            <h2>Azure Production Proof</h2>
+            <div class="card" style="margin-bottom: 24px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Integration Layer</th>
+                            <th>Status / Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Foundry OpenAI Model Deployment</td><td><code style="color: var(--accent);">grok-4-20-reasoning</code></td></tr>
+                        <tr><td>Reasoning LLM Provider</td><td><strong>local</strong></td></tr>
+                        <tr><td>Azure AI Search (Live Grounding)</td><td><strong>False</strong></td></tr>
+                        <tr><td>Cosmos DB (Reasoning Trace Storage)</td><td><strong>False</strong></td></tr>
+                        <tr><td>Azure Blob Storage (Report Upload)</td><td><strong>False</strong></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Honest Limitations & Disclaimers</h2>
+            <div class="card" style="border-left: 4px solid var(--warning); background-color: rgba(245, 158, 11, 0.03);">
+                <p style="line-height: 1.6;">
+                    Production mode is selected, but Azure AI Search did not return live grounding.
+                </p>
+                <p style="line-height: 1.6; margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">
+                    Disclaimer: FailureLens IQ is a reasoning post-mortem assistant. All recommendations, certification maps, and code playbooks are generated from knowledge bases. Final code changes should be validated by human ML engineers before production deployment.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        function showSection(id, element) {
+            document.querySelectorAll('.report-section').forEach(s => s.style.display = 'none');
+            const targetSection = document.getElementById(id);
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

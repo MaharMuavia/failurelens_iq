@@ -8,20 +8,21 @@ describe("MicrosoftIQProofPanel", () => {
       <MicrosoftIQProofPanel
         iqStatus={{
           selected_iq_layer: "Foundry IQ",
-          active_provider: "LocalIQProvider",
+          active_provider: "FoundryIQLocalAdapter",
+          foundry_iq_label: "Foundry IQ Local Adapter Mode",
           proof_level: "local_demo_fallback",
           live_services: {
             azure_ai_search: false,
             azure_openai: false
           },
           compliance_status: "ready_for_demo",
-          honest_limitation: "Demo mode uses local grounding; Azure AI Search is not live.",
-          judge_explanation: "FailureLens IQ satisfies the Microsoft IQ requirement."
+          honest_limitation: "Azure quota is 0, so this demo uses local Foundry IQ adapter mode.",
+          judge_explanation: "This project mirrors Foundry IQ architecture locally."
         }}
         readiness={{ checks: { azure_ai_search_configured: false, azure_openai_configured: false } }}
         demoReport={{
           grounding_summary: {
-            source_types: ["local_demo_grounding"],
+            source_types: ["local_foundry_iq_adapter"],
             citations_count: 3
           }
         }}
@@ -29,9 +30,10 @@ describe("MicrosoftIQProofPanel", () => {
       />
     );
 
-    expect(screen.getByText("Foundry IQ grounded retrieval proof")).toBeInTheDocument();
-    expect(screen.getByText("Local Demo Fallback")).toBeInTheDocument();
-    expect(screen.getByText("LocalIQProvider")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /copy iq compliance summary/i })).toBeInTheDocument();
+    expect(screen.getByText("Local adapter mode with citations and permission-aware metadata")).toBeInTheDocument();
+    expect(screen.getByText("Foundry IQ Local Adapter")).toBeInTheDocument();
+    expect(screen.getByText("Foundry IQ")).toBeInTheDocument();
+    expect(screen.getByText("Local Knowledge Index")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy iq/i })).toBeInTheDocument();
   });
 });

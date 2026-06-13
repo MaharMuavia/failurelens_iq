@@ -1,0 +1,12 @@
+{
+  "experiment": {
+    "experiment_id": "lr-underfit-004",
+    "model": "LinearRegression",
+    "train_accuracy": 0.52,
+    "validation_accuracy": 0.50,
+    "test_accuracy": 0.48,
+    "dataset_size": 50000,
+    "feature_count": 8,
+    "notes": "Simple linear model on highly non-linear data. R^2 < 0.3 on all splits."
+  }
+}

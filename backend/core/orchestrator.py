@@ -19,6 +19,7 @@ from backend.core.planner import Planner
 from backend.models.enums import AgentName
 from backend.models.schemas import AgentContext, ExperimentLog
 from backend.services.knowledge_index import KnowledgeIndex
+from backend.services.foundry_iq_local_adapter import FoundryIQLocalAdapter
 from backend.services.local_iq_provider import LocalIQProvider
 from backend.services.scoring_service import ScoringService
 from backend.services.llm_reasoning_provider import LLMReasoningProvider
@@ -33,7 +34,7 @@ class Orchestrator:
         if not self.data_loader.experiments:
             self.data_loader.load_all()
         self.knowledge_index: KnowledgeIndex = getter("knowledge_index") or KnowledgeIndex(Path("knowledge/foundry_docs"))
-        self.iq_provider: LocalIQProvider = getter("iq_provider") or LocalIQProvider(self.knowledge_index)
+        self.iq_provider: Any = getter("iq_provider") or FoundryIQLocalAdapter()
         self.scoring_service: ScoringService = getter("scoring_service") or ScoringService()
         self.planner = Planner()
         self.gate = ConfidenceGate()
@@ -67,8 +68,12 @@ class Orchestrator:
             passed, reason = self.gate.evaluate(ctx)
             await self._emit(emitter, "confidence_gate", ctx, AgentName.CONFIDENCE_GATE.value, {"passed": passed, "reason": reason})
             if passed:
-                for agent in [self.cert_mapper, self.remediation, self.assessment, self.manager]:
-                    await self._run_agent(agent, ctx, emitter)
+                await self._run_agent(self.cert_mapper, ctx, emitter)
+                await asyncio.gather(
+                    self._run_agent(self.remediation, ctx, emitter),
+                    self._run_agent(self.assessment, ctx, emitter),
+                )
+                await self._run_agent(self.manager, ctx, emitter)
             else:
                 for agent in [self.cert_mapper, self.remediation, self.assessment]:
                     trace = agent.skip_trace(ctx, reason or "Confidence gate halted downstream learning actions.")

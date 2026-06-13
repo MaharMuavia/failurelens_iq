@@ -75,6 +75,7 @@ async def stream_analysis(
 
     async def events():
         task = asyncio.create_task(runner())
+        heartbeat_counter = 0
         try:
             while True:
                 if await request.is_disconnected():
@@ -83,9 +84,13 @@ async def stream_analysis(
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=0.5)
                     yield f"data: {json.dumps(event)}\n\n"
+                    heartbeat_counter = 0
                     if event["event"] in {"pipeline_completed", "pipeline_failed"}:
                         break
                 except asyncio.TimeoutError:
+                    heartbeat_counter += 1
+                    if heartbeat_counter % 20 == 0:
+                        yield ": keepalive\n\n"
                     continue
         except asyncio.CancelledError:
             task.cancel()
@@ -99,6 +104,19 @@ async def stream_analysis(
                     pass
 
     return StreamingResponse(events(), media_type="text/event-stream")
+
+
+@router.get("/trace/{run_id}")
+async def trace_timeline(request: Request, run_id: str) -> dict[str, Any]:
+    cached = getattr(request.app.state, "trace_timeline", {}).get(run_id)
+    if cached:
+        return cached
+    return {
+        "run_id": run_id,
+        "status": "not_found",
+        "timeline": [],
+        "message": "Run a demo or analysis first to populate the local trace timeline.",
+    }
 
 
 @router.post("/analysis/custom")

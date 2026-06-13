@@ -4,6 +4,8 @@ from pathlib import Path
 SECRET_PATTERNS = [
     "AZURE_OPENAI_API_KEY=sk-",
     "AZURE_AI_SEARCH_KEY=sk-",
+    "FOUNDRY_API_KEY=sk-",
+    "FOUNDRY_API_KEY=api-",
     "-----BEGIN PRIVATE KEY-----",
     "AccountKey=",
 ]

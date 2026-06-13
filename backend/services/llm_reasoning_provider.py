@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import json
+import logging
 from pydantic import BaseModel, Field
 from typing import Any
 
 from backend.azure.openai_client import AzureOpenAIClient
+from backend.core.config import settings
 from backend.models.schemas import ExperimentLog, ClassificationResult, RetrievalResult, PlannerContext
+from backend.services.openai_client import OpenAIClient
+from backend.services.foundry_openai_client import FoundryOpenAIClient
+from backend.services.foundry_agent_client import FoundryAgentClient
+
+logger = logging.getLogger(__name__)
 
 
 class LLMReasoningResult(BaseModel):
@@ -22,11 +29,42 @@ class LLMReasoningResult(BaseModel):
     raw_summary: str
     warning: str | None = None
     reasoning_steps: dict[str, str] = Field(default_factory=dict)
+    model: str | None = None
 
 
 class LLMReasoningProvider:
-    def __init__(self, openai_client: AzureOpenAIClient) -> None:
-        self.openai_client = openai_client
+    def __init__(
+        self,
+        azure_openai_client: AzureOpenAIClient,
+        openai_client: OpenAIClient | None = None,
+        foundry_openai_client: FoundryOpenAIClient | None = None,
+        foundry_agent_client: FoundryAgentClient | None = None,
+    ) -> None:
+        self.azure_openai_client = azure_openai_client
+        self.openai_client = openai_client or OpenAIClient()
+        self.foundry_openai_client = foundry_openai_client
+        self.foundry_agent_client = foundry_agent_client
+
+    def _select_client(self) -> tuple[Any | None, str, str]:
+        provider = settings.MODEL_PROVIDER
+        if provider == "foundry_openai":
+            return self.foundry_openai_client, "MicrosoftFoundryOpenAI", "Microsoft Foundry OpenAI"
+        if provider == "foundry_agent":
+            if self.foundry_agent_client and self.foundry_agent_client.enabled:
+                try:
+                    from azure.ai.projects import AIProjectClient
+                    return self.foundry_agent_client, "MicrosoftFoundryAgent", "Microsoft Foundry Agent"
+                except ImportError:
+                    logger.warning("SDK auth is not configured: azure-ai-projects or azure-identity is not installed. Falling back to foundry_openai.")
+                    return self.foundry_openai_client, "MicrosoftFoundryOpenAI", "Microsoft Foundry OpenAI"
+            else:
+                logger.warning("Foundry Agent client is not enabled. Falling back to foundry_openai.")
+                return self.foundry_openai_client, "MicrosoftFoundryOpenAI", "Microsoft Foundry OpenAI"
+        if provider == "azure_openai":
+            return self.azure_openai_client, "AzureOpenAI", "Azure OpenAI"
+        if provider == "openai":
+            return self.openai_client, "OpenAI", "OpenAI fallback"
+        return None, "deterministic_fallback", "local deterministic fallback"
 
     async def analyze_failure(
         self,
@@ -35,7 +73,8 @@ class LLMReasoningProvider:
         retrieval: RetrievalResult | None,
         planner_context: PlannerContext | None,
     ) -> LLMReasoningResult:
-        if not self.openai_client.enabled:
+        client, provider_name, provider_label = self._select_client()
+        if client is None or not client.enabled:
             return LLMReasoningResult(
                 used_llm=False,
                 provider="deterministic_fallback",
@@ -44,11 +83,11 @@ class LLMReasoningProvider:
                 knowledge_gap="Evidence collection and review readiness before automated learning recommendations.",
                 evidence=[],
                 counter_evidence=[],
-                uncertainty=["No live Azure OpenAI connection available."],
+                uncertainty=[f"No live {provider_label} connection available."],
                 confidence=0.45,
-                recommended_next_action="Enable Azure OpenAI configuration for LLM-grounded reasoning.",
-                raw_summary="Azure OpenAI credentials are not configured; falling back to deterministic reasoning.",
-                warning="Azure OpenAI credentials are not configured; deterministic local fallbacks are used.",
+                recommended_next_action="Enable Azure OpenAI or direct OpenAI fallback credentials for LLM-grounded reasoning.",
+                raw_summary=f"{provider_label} credentials are not configured; falling back to deterministic reasoning.",
+                warning=f"{provider_label} credentials are not configured; deterministic local fallbacks are used.",
             )
 
         system_prompt = (
@@ -72,7 +111,7 @@ class LLMReasoningProvider:
             '    "uncertainty_check": "Detailed finding from uncertainty assessment.",\n'
             '    "decision": "Detailed finding from decision/calibration step.",\n'
             '    "next_action": "Detailed finding regarding next action."\n'
-            "  }\n"
+            '  }\n'
             "}\n"
             "DO NOT add markdown formatting (like ```json) or any conversational text before or after the JSON."
         )
@@ -115,7 +154,16 @@ class LLMReasoningProvider:
             f"Analyze this data and return the JSON object."
         )
 
-        response = await self.openai_client.chat_completion_raw(system_prompt, user_prompt)
+        response = await client.chat_completion_raw(system_prompt, user_prompt)
+        
+        # If agent auth failed because SDK auth not configured, fall back to foundry_openai
+        if not response["ok"] and settings.MODEL_PROVIDER == "foundry_agent" and "SDK auth is not configured" in response.get("detail", ""):
+            logger.warning("Foundry Agent call failed due to missing SDK auth. Falling back to foundry_openai client.")
+            if self.foundry_openai_client and self.foundry_openai_client.enabled:
+                response = await self.foundry_openai_client.chat_completion_raw(system_prompt, user_prompt)
+                provider_name = "MicrosoftFoundryOpenAI"
+                provider_label = "Microsoft Foundry OpenAI"
+
         if not response["ok"]:
             return LLMReasoningResult(
                 used_llm=False,
@@ -125,11 +173,11 @@ class LLMReasoningProvider:
                 knowledge_gap="Evidence collection and review readiness before automated learning recommendations.",
                 evidence=[],
                 counter_evidence=[],
-                uncertainty=[f"Azure OpenAI error: {response.get('detail', 'Unknown error')}"],
+                uncertainty=[f"{provider_label} error: {response.get('detail', 'Unknown error')}"],
                 confidence=0.45,
                 recommended_next_action="Review API key or network setup.",
-                raw_summary="Azure OpenAI call failed; falling back to deterministic reasoning.",
-                warning=response.get("detail", "Azure OpenAI call failed."),
+                raw_summary=f"{provider_label} call failed; falling back to deterministic reasoning.",
+                warning=response.get("detail", f"{provider_label} call failed."),
             )
 
         try:
@@ -144,10 +192,20 @@ class LLMReasoningProvider:
                 content = "\n".join(lines).strip()
 
             parsed = json.loads(content)
+            
+            # Map the model configuration for reasoning result
+            model_val = None
+            if provider_name in ("MicrosoftFoundryOpenAI", "MicrosoftFoundryAgent"):
+                model_val = settings.FOUNDRY_MODEL_DEPLOYMENT or "grok-4-20-reasoning"
+            elif provider_name == "AzureOpenAI":
+                model_val = settings.AZURE_OPENAI_DEPLOYMENT
+            elif provider_name == "OpenAI":
+                model_val = settings.OPENAI_MODEL
+
             # Ensure keys exist or set defaults
             return LLMReasoningResult(
                 used_llm=True,
-                provider="AzureOpenAI",
+                provider=provider_name,
                 root_cause=parsed.get("root_cause") or "Root cause undetermined by LLM.",
                 violated_assumption=parsed.get("violated_assumption") or "Assumption check was not formulated.",
                 knowledge_gap=parsed.get("knowledge_gap") or "Knowledge gap was not formulated.",
@@ -158,6 +216,7 @@ class LLMReasoningProvider:
                 recommended_next_action=parsed.get("recommended_next_action") or "Review details.",
                 raw_summary=parsed.get("raw_summary") or parsed.get("root_cause") or "No raw summary.",
                 reasoning_steps=parsed.get("reasoning_steps") or {},
+                model=model_val
             )
         except Exception as exc:
             return LLMReasoningResult(
@@ -168,9 +227,10 @@ class LLMReasoningProvider:
                 knowledge_gap="Evidence collection and review readiness before automated learning recommendations.",
                 evidence=[],
                 counter_evidence=[],
-                uncertainty=[f"Failed to parse Azure OpenAI response: {exc}"],
+                uncertainty=[f"Failed to parse {provider_label} response: {exc}"],
                 confidence=0.45,
                 recommended_next_action="Review LLM output format.",
                 raw_summary="Failed to parse LLM response; falling back to deterministic reasoning.",
-                warning=f"Failed to parse Azure OpenAI response: {exc}",
+                warning=f"Failed to parse {provider_label} response: {exc}",
             )
+

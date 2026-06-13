@@ -46,7 +46,7 @@ class ClassifierAgent(BaseAgent):
                 f"Selected {category.value} by highest-priority triggered rule; conflicts={', '.join(c.value for c in conflicts) or 'none'}."
             ),
             confidence=round(confidence, 4),
-            grounding_citations=["ml_failure_taxonomy.md § Cross-Category Conflict Resolution"],
+            grounding_citations=["knowledge/foundry_iq_sources/failure_taxonomy.md#failure-taxonomy-001"],
         )
         steps = [
             self.build_reasoning_step(1, "Evaluated six deterministic rules", f"{len(triggered)} rules triggered.", ["failure_observation", "metrics", "drift_indicators"], 0.12),

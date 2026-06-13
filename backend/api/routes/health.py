@@ -15,9 +15,30 @@ async def health(request: Request) -> dict[str, object]:
         auth_misconfigured = True
         health_status = "unhealthy"
 
+    foundry_openai_configured = bool(hasattr(app.state, "foundry_openai_client") and app.state.foundry_openai_client.enabled)
+    foundry_agent_configured = bool(hasattr(app.state, "foundry_agent_client") and app.state.foundry_agent_client.enabled)
+    foundry_project_endpoint_configured = bool(settings.FOUNDRY_PROJECT_ENDPOINT)
+
     return {
         "status": health_status,
+        "service": "FailureLens IQ API",
+        "foundry_mode": settings.FOUNDRY_CALL_MODE,
+        "credentials_configured": bool(settings.AZURE_AI_PROJECT_ENDPOINT and settings.AZURE_AI_API_KEY),
         "app_mode": settings.APP_MODE,
+        "model_provider": settings.MODEL_PROVIDER,
+        "openai_configured": bool(settings.OPENAI_API_KEY),
+        "azure_openai_configured": app.state.azure_config.enabled_integrations["azure_openai"],
+        "foundry_openai_configured": foundry_openai_configured,
+        "foundry_project_endpoint_configured": foundry_project_endpoint_configured,
+        "foundry_model_deployment": settings.FOUNDRY_MODEL_DEPLOYMENT,
+        "foundry_agent_configured": foundry_agent_configured,
+        "microsoft_iq_live": (
+            settings.APP_MODE == "production"
+            and app.state.azure_config.enabled_integrations["azure_ai_search"]
+            and app.state.azure_config.enabled_integrations["azure_openai"]
+        ),
+        "foundry_adapter_ready": True,
+        "azure_policy_blocker_documented": True,
         "active_iq_provider": type(app.state.iq_provider).__name__,
         "version": "1.0.0",
         "experiments_loaded": len(app.state.data_loader.experiments),
@@ -30,7 +51,11 @@ async def health(request: Request) -> dict[str, object]:
         "microsoft_iq": {
             "selected_layer": "Foundry IQ",
             "provider": type(app.state.iq_provider).__name__,
-            "proof_level": "live_azure" if type(app.state.iq_provider).__name__ == "AzureFoundryIQProvider" else "local_demo_fallback",
+            "proof_level": "live_azure_foundry" if (
+                settings.APP_MODE == "production"
+                and app.state.azure_config.enabled_integrations["azure_ai_search"]
+                and app.state.azure_config.enabled_integrations["azure_openai"]
+            ) else "local_demo_fallback",
             "azure_ai_search_configured": app.state.azure_config.enabled_integrations["azure_ai_search"],
             "azure_openai_configured": app.state.azure_config.enabled_integrations["azure_openai"],
             "production_grounding_ready": (

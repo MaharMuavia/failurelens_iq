@@ -40,7 +40,7 @@ async def test_demo_run_includes_video_demo_fields():
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post("/demo/run?force_refresh=true")
     payload = response.json()
-    assert payload["video_demo_summary"]["best_screen_to_show"] == "Frontend Judge Demo panel"
+    assert payload["video_demo_summary"]["best_screen_to_show"] == "Animated Agent Flow"
     assert payload["video_demo_summary"]["agent_count"] >= 1
     assert "Structured reasoning traces" in payload["winning_points"]
     assert len(payload["demo_narration"]) >= 6

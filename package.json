@@ -1,0 +1,17 @@
+{
+  "name": "failurelens-iq-root",
+  "version": "1.0.0",
+  "description": "Root orchestrator for FailureLens IQ",
+  "private": true,
+  "scripts": {
+    "dev": "npx concurrently --kill-others \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "uvicorn backend.api.main:app --reload --port 8000",
+    "install:all": "npm install --prefix frontend && pip install -r backend/requirements.txt",
+    "test:frontend": "npm run test --prefix frontend",
+    "test:backend": "pytest tests -v"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

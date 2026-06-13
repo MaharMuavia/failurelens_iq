@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import Counter
+
 from backend.agents.base_agent import BaseAgent
 from backend.models.enums import AgentName, FailureCategory, PlanType, VulnerabilityLevel
 from backend.models.schemas import AgentContext, RemediationResult
@@ -15,7 +17,14 @@ class RemediationAgent(BaseAgent):
         profile = self.data_loader.get_team_profile(exp.team_id) if self.data_loader else {}
         high_load = profile.get("sprint_load") == "high"
         category = ctx.classification.failure_category if ctx.classification else FailureCategory.UNKNOWN
-        recurring = ctx.team_insights.recurring_pattern_alert if ctx.team_insights else None
+        recurring = None
+        if self.data_loader:
+            team_exps = self.data_loader.experiments_for_team(exp.team_id)
+            recent_failures = [e for e in team_exps if e.outcome in {"failure", "unknown"} and abs((exp.timestamp - e.timestamp).days) <= 30]
+            recent_counts = Counter(self.data_loader.infer_category(e).value for e in recent_failures)
+            for cat_val, count in recent_counts.most_common(1):
+                if count >= 3 and cat_val != FailureCategory.UNKNOWN.value:
+                    recurring = f"{exp.team_id} has {count} {cat_val} failures in the last 30 days"
         high_risk = category == FailureCategory.RESPONSIBLE_AI or profile.get("compliance_sensitivity") == "high"
         if recurring or high_risk:
             plan_type = PlanType.IMMERSIVE

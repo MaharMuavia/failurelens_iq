@@ -1,32 +1,25 @@
-import {
-  BarChart3,
-  Bell,
-  BookOpen,
-  BrainCircuit,
-  CheckCircle2,
-  Clipboard,
-  DatabaseZap,
-  Download,
-  FileWarning,
-  Gauge,
-  HeartPulse,
-  LayoutDashboard,
-  Play,
-  Search,
-  Settings,
-  ShieldAlert,
-  Users
-} from "lucide-react";
-import { ConfidenceMeter } from "./ConfidenceMeter";
+import { BarChart3, BookOpen, BrainCircuit, DatabaseZap, FileWarning, Gauge, LayoutDashboard, ShieldAlert, Users } from "lucide-react";
+import { AgentFlowGraph } from "./AgentFlowGraph";
+import { ConflictResolutionPanel } from "./ConflictResolutionPanel";
+import { DemoCommandPanel } from "./DemoCommandPanel";
 import { EvidenceTable } from "./EvidenceTable";
 import { ExperimentTable } from "./ExperimentTable";
+import { FailureMetricChart } from "./FailureMetricChart";
+import { FailureTrendChart } from "./FailureTrendChart";
+import { FoundryIQLayerDiagram } from "./FoundryIQLayerDiagram";
+import { IQEvidenceTrail } from "./IQEvidenceTrail";
+import { IQGroundingPanel } from "./IQGroundingPanel";
 import { KnowledgeSearch } from "./KnowledgeSearch";
+import { MetricsCards } from "./MetricsCards";
 import { MicrosoftIQProofPanel } from "./MicrosoftIQProofPanel";
-import { ReasoningPanel } from "./ReasoningPanel";
+import { ReasoningTimeline } from "./ReasoningTimeline";
+import { Toast } from "./Toast";
+import { VideoDemoBanner } from "./VideoDemoBanner";
 import { teamProfiles } from "../data/mockData";
-import { VIDEO_DEMO_MODE } from "../config/demoMode";
 import { useAnalysis } from "../hooks/useAnalysis";
 import { useSSEStream } from "../hooks/useSSEStream";
+import { PromptAnalysisPanel } from "./PromptAnalysisPanel";
+import { InteractiveReportDownload } from "./InteractiveReportDownload";
 
 const navItems = [
   { label: "Analysis", icon: LayoutDashboard },
@@ -35,17 +28,25 @@ const navItems = [
   { label: "Knowledge", icon: BookOpen }
 ];
 
-const demoAgents = [
-  "Classifier",
-  "Root cause",
-  "Historian",
-  "Coach",
-  "Certification",
-  "Integration"
+const agentProof = [
+  ["Planner", "Plans evidence checks"],
+  ["Classifier", "Classifies failure mode"],
+  ["Root cause", "Explains violated assumption"],
+  ["Historian", "Finds repeat patterns"],
+  ["Coach", "Builds remediation"],
+  ["Certification", "Maps Microsoft skills"],
+  ["Integration", "Packages leadership view"],
+  ["Microsoft IQ", "Shows honest Foundry proof"]
 ];
 
 function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
+}
+
+function firstPlanItem(value: unknown, fallback: string) {
+  if (Array.isArray(value) && value.length) return String(value[0]);
+  if (typeof value === "string" && value) return value;
+  return fallback;
 }
 
 export function ManagerDashboard({
@@ -56,20 +57,19 @@ export function ManagerDashboard({
   onTabChange?: (tab: string) => void;
 }) {
   const analysis = useAnalysis("EXP-1001");
-  const visibleSteps = useSSEStream(analysis.isRunning, analysis.selectedId, analysis.backendDisconnected);
+  const visibleSteps = useSSEStream(analysis.isRunning || analysis.isDemoRunning, analysis.selectedId, analysis.backendDisconnected);
   const selected = analysis.selectedExperiment;
   const team = teamProfiles.find((profile) => profile.team_id === selected.team_id) || teamProfiles[0];
   const experiments = analysis.experiments;
+  const report = analysis.demoReport;
 
   const failedCount = experiments.filter((experiment) => experiment.outcome === "failure").length;
   const reviewQueue = experiments.filter(
-    (experiment) => experiment.outcome === "unknown" || experiment.failure_category_label.includes("Bias")
+    (experiment) => experiment.outcome === "unknown" || (experiment.failure_category_label || "").includes("Bias")
   ).length;
 
   const changeTab = (label: string) => {
-    if (onTabChange) {
-      onTabChange(label);
-    }
+    if (onTabChange) onTabChange(label);
   };
 
   return (
@@ -90,11 +90,7 @@ export function ManagerDashboard({
             const Icon = item.icon;
             const isActive = activeTab === item.label;
             return (
-              <button
-                className={isActive ? "nav-item active" : "nav-item"}
-                key={item.label}
-                onClick={() => changeTab(item.label)}
-              >
+              <button className={isActive ? "nav-item active" : "nav-item"} key={item.label} onClick={() => changeTab(item.label)}>
                 <Icon size={18} />
                 {item.label}
               </button>
@@ -104,38 +100,37 @@ export function ManagerDashboard({
 
         <div className="sidebar-card">
           <p>Retrieval mode</p>
-          <strong>local_iq_simulation</strong>
-          <span>25 experiments indexed</span>
+          <strong>{analysis.iqStatus?.proof_level || "local_demo_fallback"}</strong>
+          <span>{report?.video_demo_summary?.reasoning_steps || 20} reasoning steps ready</span>
         </div>
       </aside>
 
       <main className="workspace">
-        {VIDEO_DEMO_MODE && (
-          <section className="video-demo-banner" role="status">
-            <CheckCircle2 size={18} />
-            <strong>Judge Demo Ready</strong>
-            <span>FailureLens IQ | Microsoft Agents League | Reasoning Agents Track</span>
-          </section>
-        )}
+        <VideoDemoBanner />
 
-        <header className="topbar">
-          <div>
-            <p className="workspace-kicker">Analysis workspace</p>
-            <h1>Experiment failure intelligence</h1>
+        <header className="demo-hero">
+          <div className="demo-hero-copy">
+            <div className={analysis.backendDisconnected ? "backend-mode-badge mock" : "backend-mode-badge"}>
+              {analysis.backendDisconnected ? "Mock preview only" : "Live backend demo"}
+            </div>
+            <h1>FailureLens IQ</h1>
+            <p>Turns failed ML experiments into learning intelligence</p>
+            <strong>{report?.ui_summary?.judge_hook || "This is not just a classifier; it is a learning memory system."}</strong>
           </div>
 
-          <div className="topbar-actions">
-            <label className="global-search">
-              <Search size={17} />
-              <input placeholder="Search runs, teams, citations" aria-label="Global search" />
-            </label>
-            <button className="icon-button" aria-label="Notifications" title="Notifications">
-              <Bell size={18} />
-            </button>
-            <button className="icon-button" aria-label="Settings" title="Settings">
-              <Settings size={18} />
-            </button>
-          </div>
+          <DemoCommandPanel
+            isRunning={analysis.isRunning}
+            isDemoRunning={analysis.isDemoRunning}
+            onHealth={analysis.checkBackendHealth}
+            onReadiness={analysis.checkAzureReadiness}
+            onCost={analysis.checkCostEstimate}
+            onCopySummary={analysis.copyDemoSummary}
+            onCopyIQ={analysis.copyIqComplianceSummary}
+            onDownload={analysis.downloadReport}
+            onJudgeDemo={analysis.runJudgeDemo}
+            onRunAnalysis={analysis.runAnalysis}
+            onResetDemo={analysis.resetDemo}
+          />
         </header>
 
         <section className="status-strip" aria-label="FailureLens summary">
@@ -171,7 +166,7 @@ export function ManagerDashboard({
               <BarChart3 size={18} />
             </span>
             <div>
-              <strong>{experiments.filter((experiment) => experiment.failure_category_label.includes("Bias")).length}</strong>
+              <strong>{experiments.filter((experiment) => (experiment.failure_category_label || "").includes("Bias")).length}</strong>
               <p>bias patterns</p>
             </div>
           </article>
@@ -194,175 +189,174 @@ export function ManagerDashboard({
             {analysis.statusMessage}
           </section>
         )}
+        <Toast message={analysis.statusMessage && !analysis.backendDisconnected && !analysis.authRequired ? analysis.statusMessage : ""} />
 
         {activeTab === "Analysis" && (
-          <>
-            <section className="dashboard-grid">
-              <div className="primary-column">
-                <section className="panel diagnosis-panel">
-                  <div className="diagnosis-header">
-                    <div>
-                      <p className="eyebrow">Selected run</p>
-                      <h2>
-                        {selected.experiment_id} · {selected.failure_category_label}
-                      </h2>
-                    </div>
-                    <div className="diagnosis-actions">
-                      <button className="secondary-button" type="button" onClick={analysis.checkBackendHealth}>
-                        <HeartPulse size={16} />
-                        Health
-                      </button>
-                      <button className="secondary-button" type="button" onClick={analysis.checkAzureReadiness}>
-                        <ShieldAlert size={16} />
-                        Readiness
-                      </button>
-                      <button className="secondary-button" type="button" onClick={analysis.checkCostEstimate}>
-                        <Gauge size={16} />
-                        Cost
-                      </button>
-                      <button className="secondary-button" type="button" onClick={analysis.copyDemoSummary}>
-                        <Clipboard size={16} />
-                        Copy summary
-                      </button>
-                      <button className="secondary-button" type="button" onClick={analysis.copyIqComplianceSummary}>
-                        <Clipboard size={16} />
-                        Copy IQ
-                      </button>
-                      <button className="secondary-button" type="button" onClick={analysis.downloadReport}>
-                        <Download size={16} />
-                        Report
-                      </button>
-                      <button className="secondary-button" type="button" onClick={analysis.runJudgeDemo}>
-                        <BrainCircuit size={16} />
-                        {analysis.isDemoRunning ? "Building demo" : "Judge Demo"}
-                      </button>
-                      <button className="primary-button" type="button" onClick={analysis.runAnalysis}>
-                        <Play size={16} />
-                        {analysis.isRunning ? "Streaming" : "Run analysis"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="diagnosis-body">
-                    <div>
-                      <span className="category-band">{selected.pipeline_stage}</span>
-                      <h3>{selected.failure_observation}</h3>
-                      <p>
-                        The system links this failure to {selected.validation_strategy} evidence, baseline comparison,
-                        and team learning context for {team.team_name}.
-                      </p>
-                    </div>
-                    <div className="metric-stack">
-                      {Object.entries(selected.metrics).slice(0, 3).map(([metric, value]) => (
-                        <div className="metric-row" key={metric}>
-                          <span>{metric.replace("_", " ")}</span>
-                          <strong>{formatPercent(value)}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
+          analysis.isEmpty ? (
+            <div className="flex flex-col items-center gap-6 py-10 w-full max-w-4xl mx-auto">
+              <div className="text-center max-w-2xl px-4 mb-4">
+                <h2 className="text-xl font-bold mb-2 text-white">No analysis yet</h2>
+                <p className="text-gray-400 text-sm">
+                  Start by describing a failed ML experiment. FailureLens IQ will generate the experiment record, run reasoning agents, retrieve grounded evidence, and create a downloadable report.
+                </p>
+              </div>
+              <PromptAnalysisPanel
+                onGenerate={analysis.generateAnalysis}
+                isGenerating={analysis.isGenerating}
+                error={analysis.error}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Active Prompt Analysis Panel and Download Buttons */}
+              <div className="mb-6 flex flex-col md:flex-row gap-6 items-center justify-between bg-[#071226]/40 p-5 border border-[#1e2d42] rounded-xl backdrop-blur-md w-full max-w-5xl mx-auto">
+                <div className="flex-1 w-full">
+                  <h3 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-1">Active Prompt Analysis</h3>
+                  <p className="text-sm italic text-gray-200">"{analysis.prompt}"</p>
+                </div>
+                <div className="flex justify-end w-full md:w-auto">
+                  <InteractiveReportDownload
+                    downloadUrl={analysis.interactiveReport?.download_url || null}
+                    isEnabled={!!analysis.interactiveReport}
+                  />
+                </div>
               </div>
 
-              <aside className="detail-rail">
-                <ConfidenceMeter score={analysis.confidence} requiresReview={analysis.requiresReview} />
-              </aside>
-            </section>
-
-            <section className="lower-grid-analysis" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginTop: "24px" }}>
-              <ReasoningPanel steps={visibleSteps} />
-              <EvidenceTable experiment={selected} />
-            </section>
-
-            <section className="demo-proof-grid" aria-label="Judge demo proof points" style={{ marginTop: "24px" }}>
-              <section className="panel">
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Why this is not just a classifier</p>
-                    <h2>Six reasoning agents split diagnosis from coaching and governance</h2>
-                  </div>
+              <section className="failure-snapshot-grid" aria-label="Failure snapshot">
+                <div className="mission-left">
+                  <section className="panel diagnosis-panel">
+                    <div className="diagnosis-header">
+                      <div>
+                        <p className="eyebrow">Failure Snapshot</p>
+                        <h2>
+                          {selected.experiment_id} - {selected.failure_category_label}
+                        </h2>
+                      </div>
+                      <span className="category-band">{selected.pipeline_stage}</span>
+                    </div>
+                    <h3>{selected.failure_observation}</h3>
+                    <p>
+                      The system links this failure to {selected.validation_strategy} evidence, baseline comparison, and team learning context for {team.team_name}.
+                    </p>
+                    <div className="snapshot-callout">
+                      {report?.ui_summary?.main_takeaway || "EXP-1001 failed because aggregate accuracy hid class-level failure."}
+                    </div>
+                  </section>
+                  <MetricsCards experiment={selected} />
                 </div>
-                <div className="agent-card-grid">
-                  {demoAgents.map((agent, index) => (
-                    <article className="agent-mini-card" key={agent}>
-                      <span>{index + 1}</span>
-                      <strong>{agent}</strong>
-                      <p>{["Classifies failure mode", "Explains violated assumption", "Finds repeat patterns", "Builds remediation", "Maps Microsoft skills", "Packages leadership view"][index]}</p>
-                    </article>
-                  ))}
-                </div>
+
+                <FailureMetricChart experiment={selected} metricStory={report?.metric_story} />
+                <FailureTrendChart experiment={selected} />
+              </section>
+
+              <AgentFlowGraph events={visibleSteps as any[]} demoReport={report} isAnimating={analysis.isDemoRunning || analysis.isRunning} />
+
+              <ConflictResolutionPanel demoReport={report as any} />
+
+              <IQGroundingPanel demoReport={report} />
+
+              <section className="lower-grid-analysis">
+                <ReasoningTimeline steps={(report?.reasoning_timeline || report?.agent_workflow || visibleSteps) as any[]} />
+                <EvidenceTable experiment={selected} />
               </section>
 
               <MicrosoftIQProofPanel
                 iqStatus={analysis.iqStatus}
                 readiness={analysis.readiness}
-                demoReport={analysis.demoReport}
+                demoReport={report}
                 onCopy={analysis.copyIqComplianceSummary}
               />
-            </section>
-            {analysis.costEstimate && (
-              <section className="panel cost-guard-panel" style={{ marginTop: "16px" }}>
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Cost guard</p>
-                    <h2>Demo usage limits</h2>
-                  </div>
-                </div>
-                {analysis.costEstimate && (
-                  <p className="manager-note">
-                    Cost guard: max {(analysis.costEstimate as any).azure_openai?.max_tokens_per_demo || 500} tokens per demo;
-                    Search top-k capped at {(analysis.costEstimate as any).limits?.max_search_top_k || 5}.
-                  </p>
-                )}
+              <section className="panel foundry-iq-explainer">
+                <FoundryIQLayerDiagram mode={report?.foundry_iq_layer?.label || analysis.iqStatus?.foundry_iq_label} />
+                <IQEvidenceTrail demoReport={report} />
               </section>
-            )}
 
-            {analysis.demoReport && (
-              <section className="panel demo-summary" aria-label="Judge demo report" style={{ marginTop: "24px" }}>
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Judge demo</p>
-                    <h2>{analysis.demoReport.demo_title}</h2>
+              <section className="demo-proof-grid" aria-label="Judge demo proof points">
+                <section className="panel">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Remediation + Certification</p>
+                      <h2>3-day fix, 7-day learning plan, Microsoft skill mapping</h2>
+                    </div>
                   </div>
-                  <span className="icon-chip neutral">
-                    <BrainCircuit size={18} />
-                  </span>
-                </div>
-                <p>{analysis.demoReport.executive_summary}</p>
-                {analysis.demoReport.video_demo_summary && (
-                  <div className="video-summary-box">
-                    <strong>{analysis.demoReport.video_demo_summary.solution}</strong>
-                    <span>
-                      {analysis.demoReport.video_demo_summary.reasoning_steps} reasoning steps |
-                      {" "}{Math.round((analysis.demoReport.video_demo_summary.confidence || 0) * 100)}% confidence |
-                      {" "}{analysis.demoReport.video_demo_summary.human_review_required ? "Human review gated" : "Auto-review ready"}
-                    </span>
-                  </div>
-                )}
-                <div className="demo-grid">
-                  {(analysis.demoReport.agent_workflow || []).slice(0, 6).map((agent: any) => (
-                    <article className="knowledge-hit" key={`${agent.agent_name}-${agent.status}`}>
-                      <div>
-                        <strong>{agent.agent_name}</strong>
-                        <span>{Math.round((agent.confidence_score || 0) * 100)}%</span>
-                      </div>
-                      <p>{agent.findings?.[0] || agent.role}</p>
+                  <div className="remediation-plan-grid">
+                    <article>
+                      <span>3-day plan</span>
+                      <p>{firstPlanItem(report?.remediation_plan?.three_day_plan, "Add slice metrics, stratified validation, and review minority-class failure evidence.")}</p>
                     </article>
-                  ))}
-                </div>
+                    <article>
+                      <span>7-day plan</span>
+                      <p>{firstPlanItem(report?.remediation_plan?.seven_day_plan, "Convert the failed run into a reusable evaluation checklist and team learning exercise.")}</p>
+                    </article>
+                    <article>
+                      <span>Microsoft mapping</span>
+                      <p>
+                        {report?.certification_readiness?.mapping?.cert_code || "DP-100"} -{" "}
+                        {report?.certification_readiness?.mapping?.skill_domain || "Evaluate and monitor models"}
+                      </p>
+                    </article>
+                  </div>
+                  <div className="agent-card-grid">
+                    {agentProof.map(([agent, detail], index) => (
+                      <article className="agent-mini-card" key={agent}>
+                        <span>{index + 1}</span>
+                        <strong>{agent}</strong>
+                        <p>{detail}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="panel manager-summary-panel">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Manager Summary</p>
+                      <h2>{team.team_name} action view</h2>
+                    </div>
+                  </div>
+                  <dl className="manager-list">
+                    <div>
+                      <dt>Business risk</dt>
+                      <dd>{report?.ui_summary?.business_value || "Repeat evaluation failures stay invisible."}</dd>
+                    </div>
+                    <div>
+                      <dt>Team learning gap</dt>
+                      <dd>{report?.historical_memory?.team_learning_gap || "Class-level evaluation review needs reinforcement."}</dd>
+                    </div>
+                    <div>
+                      <dt>Next action</dt>
+                      <dd>{report?.ui_summary?.next_best_action || "Assign remediation and preserve the trace."}</dd>
+                    </div>
+                    <div>
+                      <dt>Sprint load</dt>
+                      <dd>{team.sprint_load}</dd>
+                    </div>
+                  </dl>
+                </section>
               </section>
-            )}
-          </>
+
+              {analysis.costEstimate && (
+                <section className="panel cost-guard-panel">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Cost guard</p>
+                      <h2>Demo usage limits</h2>
+                    </div>
+                  </div>
+                  <p className="manager-note">
+                    Cost guard: max {(analysis.costEstimate as any).azure_openai?.max_tokens_per_demo || 500} tokens per demo; Search top-k capped at{" "}
+                    {(analysis.costEstimate as any).limits?.max_search_top_k || 5}.
+                  </p>
+                </section>
+              )}
+            </>
+          )
         )}
 
         {activeTab === "Experiments" && (
           <section className="dashboard-grid">
-            <div className="primary-column" style={{ width: "100%", maxWidth: "100%" }}>
-              <ExperimentTable
-                experiments={experiments}
-                selectedId={analysis.selectedId}
-                onSelect={analysis.setSelectedId}
-              />
+            <div className="primary-column">
+              <ExperimentTable experiments={experiments} selectedId={analysis.selectedId} onSelect={analysis.setSelectedId} />
             </div>
           </section>
         )}
@@ -396,8 +390,7 @@ export function ManagerDashboard({
                   </div>
                 </dl>
                 <p className="manager-note">
-                  Responsible AI risk is highest for TEAM-B. Convert repeated failure categories into sprint-level
-                  review tasks and cert-aligned practice.
+                  Responsible AI risk is highest for TEAM-B. Convert repeated failure categories into sprint-level review tasks and cert-aligned practice.
                 </p>
               </section>
             </div>
@@ -405,7 +398,7 @@ export function ManagerDashboard({
         )}
 
         {activeTab === "Knowledge" && (
-          <section className="lower-grid" style={{ display: "block" }}>
+          <section className="lower-grid knowledge-grid">
             <KnowledgeSearch />
           </section>
         )}

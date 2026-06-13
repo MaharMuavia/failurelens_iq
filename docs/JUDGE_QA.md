@@ -1,29 +1,37 @@
 # Judge Q&A
 
-## Why agents?
+## Why not a simple classifier?
 
-FailureLens IQ separates the job into specialized reasoning agents: classification, root-cause analysis, historical memory, remediation coaching, certification evaluation, and final manager synthesis. That separation makes each step auditable and lets the app expose evidence, uncertainty, confidence, and review gates.
+A classifier can label a failure. FailureLens IQ separates planning, classification, root-cause analysis, historical memory, remediation, certification mapping, and manager synthesis so each step can expose evidence, uncertainty, confidence, and audit entries.
 
-## Where is Microsoft IQ?
+## Where are the agents?
 
-The selected IQ layer is Foundry IQ. In production mode, FailureLens IQ uses Azure AI Search as the grounded retrieval layer connected to the reasoning agents. The `/iq/status` endpoint and Microsoft IQ Proof panel show provider, proof level, source types, citations, and compliance status.
+The frontend Mission Control view shows seven agents in the animated flow. The backend also returns agent traces in `/demo/run`, `/analysis/run`, and `/analysis/stream/{experiment_id}`.
 
-## What if Azure keys fail?
+## What is Microsoft IQ here?
 
-The local demo still works without Azure credentials. It uses a local knowledge index and synthetic experiment history, labels the result as `local_demo_fallback`, and clearly states that Azure AI Search is not live. The project does not fake Azure usage.
+The selected IQ layer is Foundry IQ. The implemented path uses Azure AI Search for grounded retrieval and Azure OpenAI for live Azure reasoning when credentials are configured.
+
+## What if Azure was blocked?
+
+The demo remains runnable without Azure credentials. It reports `local_demo_fallback` or `foundry_adapter_ready`, and the Microsoft IQ panel shows the honest limitation. Use this line in the video: "Azure resource deployment was blocked by subscription policy, so this demo uses local grounding while keeping the Foundry IQ adapter path ready and visible."
+
+## Does OpenAI count as Microsoft IQ?
+
+No. OpenAI direct API does not replace Microsoft IQ. It is only a fallback reasoning provider. Live Microsoft IQ proof requires Azure AI Search and Azure OpenAI through the Foundry adapter path.
 
 ## How do you avoid hallucination?
 
-The system grounds outputs in experiment data, local or Azure retrieval citations, structured reasoning traces, confidence scores, uncertainty notes, and a human review gate. Hidden chain-of-thought is not exposed; judges see safe summaries and audit entries.
+Outputs are grounded in experiment data, local or Azure retrieval citations, structured reasoning summaries, confidence scores, uncertainty notes, and a human review gate. Hidden chain-of-thought is not exposed.
+
+## What should judges click first?
+
+Click `Run Judge Demo`. It runs the full multi-agent reasoning pipeline, fills the animated graph, loads the Microsoft IQ proof panel, and prepares the judge-ready report.
 
 ## Why is this enterprise?
 
-It includes readiness checks, cost guards, optional API-key auth, security headers, rate limits, Azure adapter boundaries, Cosmos trace storage, Blob report upload, manager summaries, and certification-aligned remediation.
+It includes readiness checks, cost guards, optional API-key auth, security headers, rate limits, Azure adapter boundaries, optional Cosmos trace storage, optional Blob report upload, manager summaries, and certification-aligned remediation.
 
 ## What remains for production?
 
 Configure live Azure AI Search, Azure OpenAI, Cosmos DB, Blob Storage, production auth, trusted CORS origins, monitoring, and a real tenant data ingestion flow.
-
-## How does certification mapping help?
-
-Certification mapping turns a model failure into a measurable learning path. It connects root causes to Microsoft skill domains so managers can plan practice, coaching, and readiness checks instead of only fixing one model run.

@@ -167,6 +167,42 @@ class RetrievalResult(StrictModel):
         return self
 
 
+class IQSearchResult(StrictModel):
+    source: str
+    source_file: str
+    section_heading: str
+    excerpt: str
+    relevance_score: float
+    matched_terms: list[str] = Field(default_factory=list)
+    citation: str
+    grounding_confidence: float
+
+
+class GroundingResult(StrictModel):
+    claim: str
+    supported: bool
+    grounding_confidence: float
+    supporting_evidence: list[str] = Field(default_factory=list)
+    source: str = "foundry_iq_local_adapter"
+
+
+class CertSkillMapping(StrictModel):
+    failure_category: str
+    cert_code: str
+    skill_domain: str
+    source: str
+    grounding_confidence: float
+    relevant_excerpt: str
+
+
+class IQGrounding(StrictModel):
+    sources_consulted: list[str] = Field(default_factory=list)
+    grounding_confidence: float = 0.0
+    relevant_excerpts: list[str] = Field(default_factory=list)
+    iq_layer: str = "foundry_iq"
+    retrieval_method: str = "none"
+
+
 class SimilarExperiment(StrictModel):
     experiment_id: str
     team_id: str
@@ -288,8 +324,14 @@ class AgentTraceEntry(StrictModel):
     confidence_score: float = 0.0
     confidence_factors: dict[str, float] = Field(default_factory=dict)
     grounding_citations: list[str] = Field(default_factory=list)
+    grounding_citation_ids: list[str] = Field(default_factory=list)
     grounding_refs: list[str] = Field(default_factory=list)
+    iq_grounding: IQGrounding = Field(default_factory=IQGrounding)
     recommended_next_actions: list[str] = Field(default_factory=list)
+    citation_ids: list[str] = Field(default_factory=list)
+    evidence_used: list[str] = Field(default_factory=list)
+    next_action: list[str] = Field(default_factory=list)
+    grounding_source: str = ""
     audit_entries: list[AuditEntry] = Field(default_factory=list)
     skip_reason: str | None = None
     parent_trace_id: str | None = None

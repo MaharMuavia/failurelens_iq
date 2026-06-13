@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from backend.agents.base_agent import BaseAgent
 from backend.models.enums import AgentName, EvidenceStrength, FailureCategory
 from backend.models.schemas import AgentContext, DiagnosisResult

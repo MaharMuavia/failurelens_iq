@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import sys
 import hashlib
 import json
 import os
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent))
 
 import httpx
 
@@ -21,6 +23,12 @@ SOURCES = [
     "data/synthetic/team_profiles.json",
     "data/synthetic/work_context.json",
     "data/ontology/semantic_model.json",
+    "knowledge/foundry_iq_sources/failure_taxonomy.md",
+    "knowledge/foundry_iq_sources/experiment_history.json",
+    "knowledge/foundry_iq_sources/remediation_playbooks.md",
+    "knowledge/foundry_iq_sources/microsoft_certification_mapping.md",
+    "knowledge/foundry_iq_sources/responsible_ai_checklist.md",
+    "knowledge/foundry_iq_sources/manager_governance.md",
 ]
 
 
@@ -37,51 +45,92 @@ def chunk_text(text: str, size: int) -> list[str]:
     return chunks
 
 
-def markdown_docs(path: Path, max_chunk_chars: int) -> list[dict[str, str]]:
+def markdown_docs(path: Path, max_chunk_chars: int) -> list[dict[str, Any]]:
     text = path.read_text(encoding="utf-8")
+    metadata: dict[str, str] = {}
+    content_lines = []
+    in_content = False
+    for line in text.splitlines():
+        if not in_content and ":" in line:
+            key, val = line.split(":", 1)
+            norm_key = key.strip().lower().replace(" ", "_")
+            if norm_key in {"id", "citation", "agent_usage_notes", "title", "source_type", "permission_scope", "citation_id", "tags", "relevance_tags", "content", "example_evidence"}:
+                metadata[norm_key] = val.strip()
+                continue
+        in_content = True
+        content_lines.append(line)
+        
+    content_body = "\n".join(content_lines).strip()
+    if content_body.startswith("content:") or content_body.startswith("content: |"):
+        content_body = content_body.split(":", 1)[1].strip()
+        if content_body.startswith("|"):
+            content_body = content_body[1:].strip()
+            
+    tags_str = metadata.get("tags") or metadata.get("relevance_tags") or ""
+    tags = [t.strip() for t in tags_str.split(",") if t.strip()] if tags_str else []
+    if not tags:
+        tags = [path.stem.replace("_", "-")]
+        
+    permission_scope = metadata.get("permission_scope") or "demo"
+    source_type = metadata.get("source_type") or "knowledge_markdown"
+    title = metadata.get("title") or path.stem.replace("_", " ").title()
+    citation_base = metadata.get("citation") or metadata.get("id") or path.relative_to(ROOT).as_posix()
+    
     docs = []
-    for idx, chunk in enumerate(chunk_text(text, max_chunk_chars), start=1):
+    for idx, chunk in enumerate(chunk_text(content_body, max_chunk_chars), start=1):
         rel = path.relative_to(ROOT).as_posix()
         docs.append(
             {
                 "id": stable_id(f"{rel}:{idx}"),
-                "title": path.stem.replace("_", " ").title(),
+                "title": title,
                 "content": chunk,
-                "source_type": "knowledge_markdown",
+                "source_type": source_type,
                 "source_id": rel,
-                "citation": f"{rel}#chunk-{idx}",
+                "citation": f"{citation_base}#chunk-{idx}" if "#" not in citation_base else f"{citation_base}-chunk-{idx}",
                 "url": "",
                 "chunk_id": f"{path.stem}-{idx}",
                 "experiment_id": "",
                 "skill_domain": path.stem.split("_")[0].upper() if "guide" in path.stem else "",
                 "failure_category": "",
+                "permission_scope": permission_scope,
+                "tags": tags,
             }
         )
     return docs
 
 
-def json_docs(path: Path, max_chunk_chars: int) -> list[dict[str, str]]:
+def json_docs(path: Path, max_chunk_chars: int) -> list[dict[str, Any]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     records = raw if isinstance(raw, list) else raw.get("items", raw.get("experiments", [raw])) if isinstance(raw, dict) else []
     docs = []
     rel = path.relative_to(ROOT).as_posix()
     for idx, record in enumerate(records, start=1):
         content = json.dumps(record, ensure_ascii=False)[:max_chunk_chars]
-        experiment_id = str(record.get("experiment_id", "")) if isinstance(record, dict) else ""
-        failure_category = str(record.get("failure_category_label", "")) if isinstance(record, dict) else ""
+        experiment_id = str(record.get("experiment_id", "") or record.get("id", "")) if isinstance(record, dict) else ""
+        failure_category = str(record.get("failure_category_label", "") or record.get("failure_category", "")) if isinstance(record, dict) else ""
+        permission_scope = str(record.get("permission_scope", "demo")) if isinstance(record, dict) else "demo"
+        source_type = str(record.get("source_type", "experiment_json")) if isinstance(record, dict) else "experiment_json"
+        title = str(record.get("title", "")) if isinstance(record, dict) else ""
+        citation = str(record.get("citation", "")) if isinstance(record, dict) else ""
+        tags = record.get("tags") or []
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+            
         docs.append(
             {
                 "id": stable_id(f"{rel}:{idx}:{experiment_id}"),
-                "title": experiment_id or f"{path.stem} record {idx}",
+                "title": title or experiment_id or f"{path.stem} record {idx}",
                 "content": content,
-                "source_type": "experiment_json",
+                "source_type": source_type,
                 "source_id": rel,
-                "citation": f"{rel}#{experiment_id or idx}",
+                "citation": citation or f"{rel}#{experiment_id or idx}",
                 "url": "",
                 "chunk_id": f"{path.stem}-{idx}",
                 "experiment_id": experiment_id,
                 "skill_domain": "",
                 "failure_category": failure_category,
+                "permission_scope": permission_scope,
+                "tags": tags,
             }
         )
     return docs

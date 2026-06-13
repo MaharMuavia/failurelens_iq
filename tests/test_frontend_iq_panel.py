@@ -7,7 +7,8 @@ def test_frontend_iq_panel_and_actions_exist():
     hook = Path("frontend/src/hooks/useAnalysis.ts").read_text(encoding="utf-8")
     client = Path("frontend/src/api/client.ts").read_text(encoding="utf-8")
     assert "MicrosoftIQProofPanel" in dashboard
-    assert "Microsoft IQ / Foundry Proof" in panel
+    assert "Foundry IQ Layer" in panel
+    assert "Foundry IQ Local Adapter" in panel
     assert "Selected IQ Layer" in panel
     assert "Copy IQ Compliance Summary" in panel
     assert "CheckCostEstimate" not in dashboard

@@ -12,6 +12,7 @@ class Settings(BaseModel):
     # App Settings
     APP_MODE: str = Field(default="demo")
     IQ_PROVIDER: str = Field(default="local")
+    IQ_MODE: str = Field(default="local")
     HOST: str = Field(default="0.0.0.0")
     PORT: int = Field(default=8000)
     DEBUG: bool = Field(default=False)
@@ -35,6 +36,7 @@ class Settings(BaseModel):
     RATE_LIMIT_MAX_KEYS: int = Field(default=10000)
     TRUST_PROXY_HEADERS: bool = Field(default=False)
     DEMO_CACHE_TTL_SECONDS: int = Field(default=300)
+    VIDEO_DEMO_MODE: bool = Field(default=False)
     AZURE_MAX_DOCS_TO_INDEX: int = Field(default=200)
     AZURE_MAX_CHUNK_CHARS: int = Field(default=1800)
     AZURE_MAX_SEARCH_TOP_K: int = Field(default=5)
@@ -46,21 +48,43 @@ class Settings(BaseModel):
     # Paths Settings
     REPORT_OUTPUT_DIR: str = Field(default="reports")
     KNOWLEDGE_DIR: str = Field(default="knowledge/foundry_docs")
+    FOUNDRY_IQ_KNOWLEDGE_DIR: str = Field(default="knowledge/foundry_docs")
     UPLOAD_STORE_PATH: str = Field(default="data/uploads/uploaded_experiments.json")
     
     # Azure Settings
+    MODEL_PROVIDER: str = Field(default="local")
+    OPENAI_API_KEY: str = Field(default="")
+    OPENAI_MODEL: str = Field(default="gpt-4o-mini")
+    MICROSOFT_IQ_MODE: str = Field(default="foundry_adapter_ready")
     AZURE_OPENAI_ENDPOINT: str = Field(default="")
     AZURE_OPENAI_API_KEY: str = Field(default="")
     AZURE_OPENAI_DEPLOYMENT: str = Field(default="")
-    AZURE_AI_SEARCH_ENDPOINT: str = Field(default="")
-    AZURE_AI_SEARCH_KEY: str = Field(default="")
-    AZURE_AI_SEARCH_INDEX: str = Field(default="")
+    AZURE_AI_SEARCH_ENDPOINT: str | None = Field(default=None)
+    AZURE_AI_SEARCH_KEY: str | None = Field(default=None)
+    AZURE_AI_SEARCH_INDEX: str = Field(default="failurelens-knowledge")
     AZURE_STORAGE_CONNECTION_STRING: str = Field(default="")
     AZURE_BLOB_CONTAINER: str = Field(default="")
     AZURE_COSMOS_ENDPOINT: str = Field(default="")
     AZURE_COSMOS_KEY: str = Field(default="")
     AZURE_COSMOS_DATABASE: str = Field(default="")
     AZURE_COSMOS_CONTAINER: str = Field(default="")
+    
+    # Microsoft Foundry Agent/Model configurations
+    AZURE_AI_PROJECT_ENDPOINT: str = Field(default="")
+    AZURE_AI_API_KEY: str = Field(default="")
+    AZURE_AI_AGENT_NAME: str = Field(default="FailureLensIQAgent")
+    AZURE_AI_MODEL_DEPLOYMENT_NAME: str = Field(default="grok-4-20-reasoning")
+    FOUNDRY_CALL_MODE: str = Field(default="mock")
+    AZURE_AUTH_MODE: str = Field(default="api_key")
+    BACKEND_PORT: int = Field(default=8000)
+
+    # Microsoft Foundry settings
+    FOUNDRY_PROJECT_ENDPOINT: str = Field(default="")
+    FOUNDRY_OPENAI_BASE_URL: str = Field(default="")
+    FOUNDRY_API_KEY: str = Field(default="")
+    FOUNDRY_MODEL_DEPLOYMENT: str = Field(default="")
+    FOUNDRY_AGENT_NAME: str = Field(default="")
+    FOUNDRY_AGENT_VERSION: str = Field(default="1")
 
     @classmethod
     def load_from_env(cls) -> Settings:
@@ -88,6 +112,7 @@ class Settings(BaseModel):
         return cls(
             APP_MODE=os.getenv("APP_MODE", "demo").strip().lower() or "demo",
             IQ_PROVIDER=os.getenv("IQ_PROVIDER", "local").strip().lower() or "local",
+            IQ_MODE=os.getenv("IQ_MODE", "local").strip().lower() or "local",
             HOST=os.getenv("HOST", "0.0.0.0").strip(),
             PORT=get_int_env("PORT", 8000),
             DEBUG=get_bool_env("DEBUG", False),
@@ -105,6 +130,7 @@ class Settings(BaseModel):
             RATE_LIMIT_MAX_KEYS=get_int_env("RATE_LIMIT_MAX_KEYS", 10000),
             TRUST_PROXY_HEADERS=get_bool_env("TRUST_PROXY_HEADERS", False),
             DEMO_CACHE_TTL_SECONDS=get_int_env("DEMO_CACHE_TTL_SECONDS", 300),
+            VIDEO_DEMO_MODE=get_bool_env("VIDEO_DEMO_MODE", False),
             AZURE_MAX_DOCS_TO_INDEX=get_int_env("AZURE_MAX_DOCS_TO_INDEX", 200),
             AZURE_MAX_CHUNK_CHARS=get_int_env("AZURE_MAX_CHUNK_CHARS", 1800),
             AZURE_MAX_SEARCH_TOP_K=get_int_env("AZURE_MAX_SEARCH_TOP_K", 5),
@@ -114,19 +140,40 @@ class Settings(BaseModel):
             ENABLE_AZURE_REPORT_UPLOAD=get_bool_env("ENABLE_AZURE_REPORT_UPLOAD", False),
             REPORT_OUTPUT_DIR=os.getenv("REPORT_OUTPUT_DIR", "reports").strip(),
             KNOWLEDGE_DIR=os.getenv("KNOWLEDGE_DIR", "knowledge/foundry_docs").strip(),
+            FOUNDRY_IQ_KNOWLEDGE_DIR=os.getenv("FOUNDRY_IQ_KNOWLEDGE_DIR", "knowledge/foundry_docs").strip(),
             UPLOAD_STORE_PATH=os.getenv("UPLOAD_STORE_PATH", "data/uploads/uploaded_experiments.json").strip(),
+            MODEL_PROVIDER=os.getenv("MODEL_PROVIDER", "local").strip().lower() or "local",
+            OPENAI_API_KEY=os.getenv("OPENAI_API_KEY", "").strip(),
+            OPENAI_MODEL=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini",
+            MICROSOFT_IQ_MODE=os.getenv("MICROSOFT_IQ_MODE", "foundry_adapter_ready").strip().lower() or "foundry_adapter_ready",
             AZURE_OPENAI_ENDPOINT=os.getenv("AZURE_OPENAI_ENDPOINT", "").strip(),
             AZURE_OPENAI_API_KEY=os.getenv("AZURE_OPENAI_API_KEY", "").strip(),
             AZURE_OPENAI_DEPLOYMENT=os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip(),
-            AZURE_AI_SEARCH_ENDPOINT=os.getenv("AZURE_AI_SEARCH_ENDPOINT", "").strip().rstrip("/"),
-            AZURE_AI_SEARCH_KEY=os.getenv("AZURE_AI_SEARCH_KEY", "").strip(),
-            AZURE_AI_SEARCH_INDEX=os.getenv("AZURE_AI_SEARCH_INDEX", "").strip(),
+            AZURE_AI_SEARCH_ENDPOINT=os.getenv("AZURE_AI_SEARCH_ENDPOINT", "").strip().rstrip("/") or None,
+            AZURE_AI_SEARCH_KEY=os.getenv("AZURE_AI_SEARCH_KEY", "").strip() or None,
+            AZURE_AI_SEARCH_INDEX=os.getenv("AZURE_AI_SEARCH_INDEX", "failurelens-knowledge").strip() or "failurelens-knowledge",
             AZURE_STORAGE_CONNECTION_STRING=os.getenv("AZURE_STORAGE_CONNECTION_STRING", "").strip(),
             AZURE_BLOB_CONTAINER=os.getenv("AZURE_BLOB_CONTAINER", "").strip(),
             AZURE_COSMOS_ENDPOINT=os.getenv("AZURE_COSMOS_ENDPOINT", "").strip(),
             AZURE_COSMOS_KEY=os.getenv("AZURE_COSMOS_KEY", "").strip(),
             AZURE_COSMOS_DATABASE=os.getenv("AZURE_COSMOS_DATABASE", "").strip(),
             AZURE_COSMOS_CONTAINER=os.getenv("AZURE_COSMOS_CONTAINER", "").strip(),
+            
+            # Microsoft Foundry settings
+            AZURE_AI_PROJECT_ENDPOINT=os.getenv("AZURE_AI_PROJECT_ENDPOINT", "").strip(),
+            AZURE_AI_API_KEY=os.getenv("AZURE_AI_API_KEY", "").strip(),
+            AZURE_AI_AGENT_NAME=os.getenv("AZURE_AI_AGENT_NAME", "FailureLensIQAgent").strip() or "FailureLensIQAgent",
+            AZURE_AI_MODEL_DEPLOYMENT_NAME=os.getenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "grok-4-20-reasoning").strip() or "grok-4-20-reasoning",
+            FOUNDRY_CALL_MODE=os.getenv("FOUNDRY_CALL_MODE", "mock").strip().lower() or "mock",
+            AZURE_AUTH_MODE=os.getenv("AZURE_AUTH_MODE", "api_key").strip() or "api_key",
+            BACKEND_PORT=get_int_env("BACKEND_PORT", 8000),
+
+            FOUNDRY_PROJECT_ENDPOINT=os.getenv("FOUNDRY_PROJECT_ENDPOINT", "").strip(),
+            FOUNDRY_OPENAI_BASE_URL=os.getenv("FOUNDRY_OPENAI_BASE_URL", "").strip(),
+            FOUNDRY_API_KEY=os.getenv("FOUNDRY_API_KEY", "").strip(),
+            FOUNDRY_MODEL_DEPLOYMENT=os.getenv("FOUNDRY_MODEL_DEPLOYMENT", "").strip(),
+            FOUNDRY_AGENT_NAME=os.getenv("FOUNDRY_AGENT_NAME", "").strip(),
+            FOUNDRY_AGENT_VERSION=os.getenv("FOUNDRY_AGENT_VERSION", "1").strip(),
         )
 
 # Singleton configuration settings instance

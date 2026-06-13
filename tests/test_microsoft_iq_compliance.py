@@ -4,7 +4,7 @@ import pytest
 from backend.api.main import app, build_iq_provider
 from backend.azure.config import AzureConfig
 from backend.services.azure_foundry_iq_provider import AzureFoundryIQProvider
-from backend.services.local_iq_provider import LocalIQProvider
+from backend.services.foundry_iq_local_adapter import FoundryIQLocalAdapter
 
 
 @pytest.mark.anyio
@@ -29,5 +29,15 @@ async def test_demo_run_includes_microsoft_iq_compliance():
 
 
 def test_provider_selection_demo_and_production():
-    assert isinstance(build_iq_provider(AzureConfig(app_mode="demo"), None, object()), LocalIQProvider)
-    assert isinstance(build_iq_provider(AzureConfig(app_mode="production"), None, object()), AzureFoundryIQProvider)
+    assert isinstance(build_iq_provider(AzureConfig(app_mode="demo"), None, object()), FoundryIQLocalAdapter)
+    assert isinstance(build_iq_provider(AzureConfig(app_mode="production"), None, object()), FoundryIQLocalAdapter)
+    live_config = AzureConfig(
+        app_mode="production",
+        azure_openai_endpoint="https://example.openai.azure.com",
+        azure_openai_api_key="test",
+        azure_openai_deployment="gpt-test",
+        azure_ai_search_endpoint="https://example.search.windows.net",
+        azure_ai_search_key="test",
+        azure_ai_search_index="failurelens",
+    )
+    assert isinstance(build_iq_provider(live_config, None, object()), AzureFoundryIQProvider)

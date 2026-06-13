@@ -17,6 +17,8 @@ FIELDS = [
     {"name": "experiment_id", "type": "Edm.String", "filterable": True, "retrievable": True},
     {"name": "skill_domain", "type": "Edm.String", "filterable": True, "retrievable": True},
     {"name": "failure_category", "type": "Edm.String", "filterable": True, "retrievable": True},
+    {"name": "permission_scope", "type": "Edm.String", "filterable": True, "retrievable": True},
+    {"name": "tags", "type": "Collection(Edm.String)", "filterable": True, "retrievable": True},
 ]
 
 

@@ -3,6 +3,7 @@ import httpx
 from unittest.mock import AsyncMock, MagicMock
 from backend.api.main import app
 from backend.azure.openai_client import AzureOpenAIClient
+from backend.core.config import settings
 from backend.services.llm_reasoning_provider import LLMReasoningProvider, LLMReasoningResult
 from backend.models.schemas import ExperimentLog
 from backend.agents.diagnostic_agent import DiagnosticAgent
@@ -74,6 +75,8 @@ async def test_llm_reasoning_success(monkeypatch):
     config.azure_openai_deployment = "gpt"
     openai_client = AzureOpenAIClient(config)
     
+    original_provider = settings.MODEL_PROVIDER
+    settings.MODEL_PROVIDER = "azure_openai"
     provider = LLMReasoningProvider(openai_client)
     exp = MagicMock(spec=ExperimentLog)
     exp.experiment_id = "EXP-TEST"
@@ -89,7 +92,10 @@ async def test_llm_reasoning_success(monkeypatch):
     exp.suspected_leakage_columns = []
     exp.engineer_notes = ""
     
-    result = await provider.analyze_failure(exp, None, None, None)
+    try:
+        result = await provider.analyze_failure(exp, None, None, None)
+    finally:
+        settings.MODEL_PROVIDER = original_provider
     assert result.used_llm is True
     assert result.provider == "AzureOpenAI"
     assert result.root_cause == "Imbalanced evaluation hiding minority F1 collapse."
@@ -111,6 +117,8 @@ async def test_llm_reasoning_malformed_json_fallback(monkeypatch):
     config.enabled_integrations = {"azure_openai": True}
     openai_client = AzureOpenAIClient(config)
     
+    original_provider = settings.MODEL_PROVIDER
+    settings.MODEL_PROVIDER = "azure_openai"
     provider = LLMReasoningProvider(openai_client)
     exp = MagicMock(spec=ExperimentLog)
     exp.experiment_id = "EXP-TEST"
@@ -126,7 +134,10 @@ async def test_llm_reasoning_malformed_json_fallback(monkeypatch):
     exp.suspected_leakage_columns = []
     exp.engineer_notes = ""
     
-    result = await provider.analyze_failure(exp, None, None, None)
+    try:
+        result = await provider.analyze_failure(exp, None, None, None)
+    finally:
+        settings.MODEL_PROVIDER = original_provider
     assert result.used_llm is False
     assert result.provider == "deterministic_fallback"
     assert "parse" in result.warning or "Failed to parse" in result.warning

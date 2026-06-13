@@ -21,7 +21,7 @@ function metricSummary(experiment: Experiment) {
 function riskClass(experiment: Experiment) {
   if (experiment.outcome === "success") return "success";
   if (experiment.outcome === "unknown") return "warning";
-  if (experiment.failure_category_label.includes("Bias")) return "danger";
+  if ((experiment.failure_category_label || "").includes("Bias")) return "danger";
   return "attention";
 }
 

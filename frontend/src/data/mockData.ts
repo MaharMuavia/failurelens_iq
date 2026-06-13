@@ -296,30 +296,70 @@ export const knowledgeHits = [
 export const reasoningSteps = [
   {
     agent: "Planner",
+    agent_name: "Planner",
     status: "completed",
     confidence: 0.72,
+    duration_ms: 12,
     finding: "Opened evaluation-focused plan because reported accuracy conflicts with minority-class performance.",
-    evidence: ["metrics.accuracy", "metrics.minority_f1", "class_balance"]
+    key_evidence: ["metrics.accuracy", "metrics.minority_f1", "class_balance"],
+    evidence: ["metrics.accuracy", "metrics.minority_f1", "class_balance"],
+    counter_evidence: [],
+    reasoning_steps: [
+      { thought_type: "observation", finding: "accuracy=0.93 conflicts with minority_f1=0.14", evidence_fields: ["metrics"] },
+      { thought_type: "hypothesis", finding: "Suspected evaluation methodology failure from metric disagreement.", evidence_fields: ["class_balance"] },
+    ],
+    recommended_next_actions: ["Investigate evaluation strategy"]
   },
   {
     agent: "ClassifierAgent",
+    agent_name: "Failure Classifier",
     status: "completed",
     confidence: 0.79,
+    duration_ms: 18,
     finding: "Evaluation methodology is strongest among six rules; leakage and drift signals are not active.",
-    evidence: ["validation_strategy", "baseline_metrics.minority_f1"]
+    key_evidence: ["validation_strategy", "baseline_metrics.minority_f1"],
+    evidence: ["validation_strategy", "baseline_metrics.minority_f1"],
+    counter_evidence: ["suspected_leakage_columns=[] → no direct leakage evidence"],
+    reasoning_steps: [
+      { thought_type: "evidence_check", finding: "Checked 6 classification rules against experiment fields.", evidence_fields: ["metrics", "validation_strategy"] },
+      { thought_type: "inference", finding: "evaluation_methodology scored highest; data_leakage and drift ruled out.", evidence_fields: ["classification"] },
+      { thought_type: "decision", finding: "Classified as evaluation_methodology with confidence 0.79.", evidence_fields: ["classification"] },
+    ],
+    recommended_next_actions: ["Validate with diagnostic agent"]
   },
   {
     agent: "DiagnosticAgent",
+    agent_name: "Root Cause Analyzer",
     status: "completed",
     confidence: 0.83,
+    duration_ms: 45,
     finding: "Root cause points to aggregate accuracy masking class-level regression on an imbalanced target.",
-    evidence: ["failure_observation", "remediation_playbook.md"]
+    key_evidence: ["failure_observation", "class_balance=88/12"],
+    evidence: ["failure_observation", "remediation_playbook.md"],
+    counter_evidence: ["drift_indicators=[] → no deployment drift evidence"],
+    reasoning_steps: [
+      { thought_type: "evidence_check", finding: "Checked available experiment evidence from metrics and observation.", evidence_fields: ["failure_observation", "classification"] },
+      { thought_type: "inference", finding: "Holdout validation with 88/12 imbalance masked minority-class collapse.", evidence_fields: ["metrics", "validation_strategy"] },
+      { thought_type: "counter_evidence", finding: "No leakage or drift signals; counter-evidence is weak.", evidence_fields: ["baseline_metrics"] },
+      { thought_type: "uncertainty_check", finding: "Weak IQ grounding detected; confidence remains conservative.", evidence_fields: ["reflection_notes"] },
+      { thought_type: "decision", finding: "Calibrated diagnosis at confidence 0.830 vs threshold 0.450.", evidence_fields: ["planner_context.plan.dynamic_threshold"] },
+      { thought_type: "next_action", finding: "Run stratified validation and add minority-class slice metrics.", evidence_fields: ["recommended_next_actions"], next_action: "Run stratified validation" },
+    ],
+    recommended_next_actions: ["Add slice-level metrics", "Run stratified validation"]
   },
   {
     agent: "ConfidenceGate",
+    agent_name: "Confidence Gate",
     status: "completed",
     confidence: 0.81,
+    duration_ms: 2,
     finding: "Confidence gate passed with moderate evidence strength and grounded citations.",
-    evidence: ["grounding_citations", "evidence_strength"]
+    key_evidence: ["grounding_citations", "evidence_strength"],
+    evidence: ["grounding_citations", "evidence_strength"],
+    counter_evidence: [],
+    reasoning_steps: [
+      { thought_type: "decision", finding: "Confidence 0.83 exceeds dynamic threshold 0.45 — gate passed.", evidence_fields: ["confidence", "threshold"] },
+    ],
+    recommended_next_actions: ["Proceed with downstream agents"]
   }
 ];
