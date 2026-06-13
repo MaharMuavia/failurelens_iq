@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any, Dict
 from backend.core.config import settings
 import logging
 from backend.models.experiment import ExperimentInput
 from backend.models.analysis import FailureAnalysisResponse, UncertaintyBlock, CertificationGap, IQGrounding, AgentMetadata, ReasoningStep
+from backend.models.schemas import ExperimentLog
 from backend.services.foundry_agent_client import FoundryAgentClient
 from backend.services.foundry_model_client import FoundryModelClient
 from backend.services.json_parser import parse_and_validate_analysis
@@ -320,62 +322,182 @@ class FailureLensService:
                 )
             )
 
-    async def analyze(self, payload: ExperimentInput) -> FailureAnalysisResponse:
+    async def analyze(self, request: Any, payload: ExperimentInput) -> FailureAnalysisResponse:
         """
         Main entry point for analyzing a failed experiment.
-        Determines the call mode (agent/model/mock) and executes the analysis.
+        Runs the full orchestrator multi-agent reasoning pipeline.
         """
-        exp = payload.experiment
-        exp_dict = exp.model_dump()
+        exp_details = payload.experiment
         
         logger.info(
-            "Starting analysis for experiment %s in call mode: %s",
-            exp.experiment_id,
-            self.call_mode
+            "Starting unified analysis for experiment %s",
+            exp_details.experiment_id
         )
 
-        if self.call_mode == "mock":
-            logger.info("Using mock mode analysis for %s", exp.experiment_id)
-            return self._get_mock_response(exp)
+        notes_lower = exp_details.notes.lower() if exp_details.notes else ""
+        
+        # Build ExperimentLog to match Orchestrator's schema
+        exp = ExperimentLog(
+            experiment_id=exp_details.experiment_id,
+            team_id="demo-team",
+            project_name="Loan disbursal evaluator" if "loan" in notes_lower else "Credit churn predictor" if "churn" in notes_lower else "Retention forecasting",
+            role="ML Engineer",
+            model_type=exp_details.model,
+            dataset_name="churn_data.csv" if "churn" in notes_lower else "loan_data.csv" if "loan" in notes_lower else "retention_data.csv",
+            pipeline_stage="evaluation",
+            target="target",
+            validation_strategy="k-fold cross validation" if "cross-val" in notes_lower else "random split",
+            class_balance="88/12" if "imbalance" in notes_lower else "50/50",
+            preprocessing_steps=["standard scaling"],
+            feature_set=["f1", "f2"],
+            metrics={
+                "accuracy": exp_details.validation_accuracy,
+                "validation_accuracy": exp_details.validation_accuracy,
+                "train_accuracy": exp_details.train_accuracy,
+                "test_accuracy": exp_details.test_accuracy,
+                "minority_f1": 0.14 if "imbalance" in notes_lower or "f1" in notes_lower else 0.0,
+            },
+            baseline_metrics={
+                "accuracy": 0.95,
+                "validation_accuracy": 0.95,
+                "train_accuracy": 0.95,
+                "test_accuracy": 0.95,
+            },
+            error_logs=[],
+            drift_indicators=[],
+            data_quality_signals=[],
+            training_config={},
+            deployment_context={},
+            failure_symptoms=[],
+            failure_observation=exp_details.notes or "Model failed validation gate",
+            suspected_leakage_columns=["timestamp"] if "leak" in notes_lower else [],
+            engineer_notes=exp_details.notes or "",
+            current_certifications=[],
+            outcome="failure",
+            timestamp=datetime.now(timezone.utc),
+        )
 
-        user_prompt = f"Analyze the following failed ML experiment and return ONLY valid JSON:\n\n{json.dumps(exp_dict, indent=2)}"
+        # Save to experiment store
+        app_state = request.app.state
+        await app_state.experiment_store.save_uploaded_experiment(exp)
 
-        if self.call_mode == "agent":
-            try:
-                # Call saved Foundry Agent
-                raw_response = await self.agent_client.call_agent(user_prompt)
-                return parse_and_validate_analysis(
-                    raw_response,
-                    call_mode="agent",
-                    agent_name=self.agent_name,
-                    model_deployment=self.model_deployment
-                )
-            except Exception as e:
-                logger.error("Failed to run analysis via Foundry Agent: %s. Falling back to mock.", str(e))
-                # Fallback to mock on connection or runtime errors
-                fallback_resp = self._get_mock_response(exp)
-                # Mark as agent mode but indicate failure/fallback
-                fallback_resp.agent_metadata.call_mode = "agent"
-                return fallback_resp
+        # Run orchestrator
+        ctx = await app_state.orchestrator.run(exp)
 
-        elif self.call_mode == "model":
-            try:
-                # Call deployed model directly
-                raw_response = await self.model_client.call_model(
-                    system_prompt=SYSTEM_PROMPT,
-                    user_prompt=user_prompt
-                )
-                return parse_and_validate_analysis(
-                    raw_response,
-                    call_mode="model",
-                    agent_name="",
-                    model_deployment=self.model_deployment
-                )
-            except Exception as e:
-                logger.error("Failed to run analysis via deployed model: %s. Falling back to mock.", str(e))
-                fallback_resp = self._get_mock_response(exp)
-                fallback_resp.agent_metadata.call_mode = "model"
-                return fallback_resp
+        # Map AgentContext back to FailureAnalysisResponse
+        classification = ctx.classification
+        diagnosis = ctx.diagnosis
+        remediation = ctx.remediation
+        cert_mapping = ctx.cert_mapping
 
-        else:
-            raise ValueError(f"Invalid FOUNDRY_CALL_MODE configured: {self.call_mode}")
+        # Build reasoning trace steps
+        reasoning_steps = []
+        step_idx = 1
+        for trace in ctx.agent_trace:
+            if trace.status == "completed":
+                for rstep in trace.reasoning_steps:
+                    reasoning_steps.append(
+                        ReasoningStep(
+                            step=step_idx,
+                            observation=rstep.description,
+                            interpretation=rstep.finding,
+                        )
+                    )
+                    step_idx += 1
+
+        # Extract evidence_used
+        evidence_used = []
+        for trace in ctx.agent_trace:
+            if trace.status == "completed" and trace.key_evidence:
+                evidence_used.extend(trace.key_evidence)
+        evidence_used = list(set(evidence_used))
+
+        # Extract root causes
+        root_causes = [diagnosis.root_cause] if diagnosis and diagnosis.root_cause else ["Root cause undetermined."]
+        if diagnosis and diagnosis.violated_assumption:
+            root_causes.append(f"Violated assumption: {diagnosis.violated_assumption}")
+
+        # Uncertainty block
+        missing_info = []
+        alt_explanations = []
+        level = "Medium"
+        if diagnosis and diagnosis.uncertainty:
+            missing_info = diagnosis.uncertainty
+        if classification and classification.conflicting_categories:
+            alt_explanations = [f"Possible alternative category: {c.value}" for c in classification.conflicting_categories]
+            level = "High" if len(classification.conflicting_categories) > 1 else "Medium"
+
+        uncertainty = UncertaintyBlock(
+            level=level,
+            missing_information=missing_info or ["No critical missing information identified."],
+            alternative_explanations=alt_explanations or ["No alternative explanations found."],
+        )
+
+        # Recommended fixes
+        fixes = []
+        if remediation:
+            fixes.extend(remediation.three_day_plan)
+            fixes.extend(remediation.seven_day_plan)
+        if not fixes:
+            fixes = ["Review validation strategy."]
+
+        # Next experiment plan
+        next_plan = remediation.seven_day_plan if remediation else ["Audit train-test splits."]
+
+        # Certification gap
+        skill_gap = cert_mapping.skill_domain if cert_mapping else "ML Evaluation Strategy"
+        recommended_learning = cert_mapping.recommended_cert if cert_mapping else "DP-100: Microsoft Azure Data Scientist"
+        certification_gap = CertificationGap(
+            skill_gap=skill_gap,
+            recommended_learning=recommended_learning,
+        )
+
+        # IQ Grounding
+        knowledge_sources = []
+        matched_patterns = []
+        if classification and classification.grounding_citations:
+            knowledge_sources.extend(classification.grounding_citations)
+        if diagnosis and diagnosis.reflection_notes:
+            matched_patterns.extend(diagnosis.reflection_notes)
+
+        iq_grounding = IQGrounding(
+            knowledge_sources_used=list(set(knowledge_sources)) or ["failure_taxonomy.md"],
+            matched_failure_patterns=list(set(matched_patterns)) or [classification.failure_category.value if classification else "ML Failure"],
+            grounding_confidence=int((classification.confidence if classification else 0.8) * 100),
+        )
+
+        # Agent metadata
+        call_mode = settings.FOUNDRY_CALL_MODE
+        if diagnosis and diagnosis.reflection_notes:
+            for note in diagnosis.reflection_notes:
+                if "LLM Reasoning Provider: AzureOpenAI" in note:
+                    call_mode = "model"
+                    break
+                elif "LLM Reasoning Provider: MicrosoftFoundryOpenAI" in note:
+                    call_mode = "model"
+                    break
+                elif "LLM Reasoning Provider: MicrosoftFoundryAgent" in note:
+                    call_mode = "agent"
+                    break
+
+        agent_metadata = AgentMetadata(
+            call_mode=call_mode,
+            agent_name=settings.FOUNDRY_AGENT_NAME or settings.AZURE_AI_AGENT_NAME,
+            model_deployment=settings.FOUNDRY_MODEL_DEPLOYMENT or settings.AZURE_AI_MODEL_DEPLOYMENT_NAME,
+            schema_version="1.0",
+        )
+
+        return FailureAnalysisResponse(
+            failure_type=classification.failure_category.value if classification else "Unknown",
+            severity="Critical" if classification and classification.failure_category.value in ("Data Leakage", "Responsible AI") else "High",
+            confidence_score=int((ctx.overall_confidence or 0.8) * 100),
+            reasoning_trace=reasoning_steps,
+            evidence_used=evidence_used,
+            root_causes=root_causes,
+            uncertainty=uncertainty,
+            recommended_fixes=fixes,
+            next_experiment_plan=next_plan,
+            certification_gap=certification_gap,
+            iq_grounding=iq_grounding,
+            agent_metadata=agent_metadata,
+        )

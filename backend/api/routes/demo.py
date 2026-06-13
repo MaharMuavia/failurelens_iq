@@ -117,27 +117,43 @@ def build_ui_summary(ctx: Any, classification: dict[str, Any], diagnosis: dict[s
     }
 
 
-def build_foundry_iq_layer(iq_retrieval: dict[str, Any] | None) -> dict[str, Any]:
+def build_foundry_iq_layer(iq_retrieval: dict[str, Any] | None, is_live_azure: bool) -> dict[str, Any]:
     retrieval = iq_retrieval or {}
-    citations = retrieval.get("citations") or []
+    citations = retrieval.get("citations")
+    if citations is None:
+        citations = retrieval.get("hits") or []
     return {
-        "mode": "local_foundry_iq_adapter",
-        "label": "Foundry IQ Local Adapter Mode",
+        "mode": "azure_ai_search" if is_live_azure else "local_foundry_iq_adapter",
+        "label": "Live Azure Foundry IQ" if is_live_azure else "Foundry IQ Local Adapter Mode",
         "selected_iq_layer": "Foundry IQ",
-        "live_microsoft_iq": False,
-        "live_azure": False,
+        "live_microsoft_iq": is_live_azure,
+        "live_azure": is_live_azure,
         "adapter_ready": True,
-        "azure_quota_blocked": True,
+        "azure_quota_blocked": not is_live_azure,
         "knowledge_sources": retrieval.get("knowledge_sources") or [],
         "citations_count": len(citations),
         "permission_aware_metadata": True,
-        "judge_safe_explanation": "This demo mirrors Foundry IQ locally and can switch to Azure AI Search when quota is approved.",
+        "judge_safe_explanation": "Azure AI Search is configured and used for live grounded retrieval." if is_live_azure else "This demo mirrors Foundry IQ locally and can switch to Azure AI Search when credentials are set.",
     }
 
 
 def build_iq_grounding_story(iq_retrieval: dict[str, Any] | None) -> dict[str, Any]:
     retrieval = iq_retrieval or {}
-    citations = retrieval.get("citations") or []
+    citations = retrieval.get("citations")
+    if citations is None:
+        hits = retrieval.get("hits") or []
+        citations = [
+            {
+                "id": hit.get("source_file") or hit.get("citation") or "",
+                "title": hit.get("section_title") or "",
+                "source_type": "azure_ai_search" if hit.get("retrieval_mode") == "azure" else "local_demo_grounding",
+                "citation": hit.get("citation") or "",
+                "excerpt": hit.get("excerpt") or "",
+                "permission_scope": "demo",
+                "relevance_score": hit.get("relevance_score") or 0.0,
+            }
+            for hit in hits
+        ]
     return {
         "query": retrieval.get("query") or "EXP-1001 evaluation methodology minority F1 remediation certification manager governance",
         "retrieved_evidence": [
@@ -248,40 +264,26 @@ def build_demo_response(
     enabled_integrations = grounding_summary.get("enabled_integrations", {})
     current_mode = grounding_summary.get("mode", settings.APP_MODE)
     azure_openai_live = bool(enabled_integrations.get("azure_openai", False))
-    is_live_azure = current_mode == "production" and "azure_ai_search" in source_types and azure_openai_live
-    openai_fallback_active = settings.MODEL_PROVIDER == "openai" and bool(settings.OPENAI_API_KEY)
-    proof_level = (
-        "live_azure_foundry"
-        if is_live_azure
-        else "openai_fallback_with_foundry_adapter"
-        if openai_fallback_active
-        else "foundry_adapter_ready"
-        if current_mode == "production"
-        else "local_demo_fallback"
-    )
-    compliance_status = (
-        "live_iq_verified"
-        if is_live_azure
-        else "fallback_reasoning_only"
-        if openai_fallback_active
-        else "needs_azure_configuration"
-        if current_mode == "production"
-        else "ready_for_demo"
-    )
-    honest_limitation = (
-        "Azure AI Search is configured and used for live grounded retrieval."
-        if is_live_azure
-        else "Direct OpenAI is fallback reasoning only and does not count as Microsoft IQ proof."
-        if openai_fallback_active
-        else "Demo mode uses local grounding; Azure AI Search is not live."
-        if current_mode != "production"
-        else "Production mode is selected, but Azure AI Search did not return live grounding."
-    )
+    
+    is_live_azure = "azure_ai_search" in source_types and provider in ("azure_openai", "foundry_openai", "foundry_agent") and used_llm
+
+    if is_live_azure:
+        proof_level = "live_azure_foundry"
+        compliance_status = "live_iq_verified"
+        honest_limitation = "Azure AI Search and Microsoft model reasoning completed successfully."
+    elif provider in ("azure_openai", "foundry_openai", "foundry_agent") and used_llm:
+        proof_level = "foundry_model_live_without_search"
+        compliance_status = "foundry_model_live"
+        honest_limitation = "Microsoft model reasoning worked, but grounding fell back to local memory."
+    else:
+        proof_level = "local_foundry_iq_adapter"
+        compliance_status = "needs_azure_configuration"
+        honest_limitation = "Demo mode uses local grounding; Azure AI Search is not live."
     citations_present = bool(grounding_summary.get("citations"))
     agent_flow = build_agent_flow(ctx, traces, proof_level)
     metric_story = build_metric_story(exp)
     ui_summary = build_ui_summary(ctx, classification, diagnosis)
-    foundry_iq_layer = build_foundry_iq_layer(iq_retrieval)
+    foundry_iq_layer = build_foundry_iq_layer(iq_retrieval, is_live_azure)
     iq_grounding_story = build_iq_grounding_story(iq_retrieval)
     iq_integration = build_iq_integration(traces, iq_retrieval)
 

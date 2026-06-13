@@ -517,6 +517,90 @@ export class ApiClient {
     const url = `${API_BASE}${cleanPath}`;
     return new EventSource(url);
   }
+
+  static async getProofStatus(): Promise<{
+    selected_iq_layer: string;
+    proof_level: string;
+    live_microsoft_iq: boolean;
+    azure_ai_search_configured: boolean;
+    azure_ai_search_used_this_run: boolean;
+    foundry_model_configured: boolean;
+    foundry_model_used_this_run: boolean;
+    active_reasoning_provider: string;
+    active_grounding_provider: string;
+    citations_count: number;
+    grounding_refs: string[];
+    source_types: string[];
+    run_id: string;
+    trace_ids: string[];
+    warnings: string[];
+    honest_limitation: string;
+  }> {
+    try {
+      return await this.request<any>("/api/proof/live-iq");
+    } catch {
+      return {
+        selected_iq_layer: "Foundry IQ",
+        proof_level: "offline_mock_preview",
+        live_microsoft_iq: false,
+        azure_ai_search_configured: false,
+        azure_ai_search_used_this_run: false,
+        foundry_model_configured: false,
+        foundry_model_used_this_run: false,
+        active_reasoning_provider: "local",
+        active_grounding_provider: "local_iq",
+        citations_count: 0,
+        grounding_refs: [],
+        source_types: [],
+        run_id: "",
+        trace_ids: [],
+        warnings: ["API Offline. Returned offline simulation mock proof."],
+        honest_limitation: "Offline mock mode. No live Azure OpenAI or Azure AI Search connection exists."
+      };
+    }
+  }
+
+  static async runProofCheck(): Promise<{
+    selected_iq_layer: string;
+    proof_level: string;
+    live_microsoft_iq: boolean;
+    azure_ai_search_configured: boolean;
+    azure_ai_search_used_this_run: boolean;
+    foundry_model_configured: boolean;
+    foundry_model_used_this_run: boolean;
+    active_reasoning_provider: string;
+    active_grounding_provider: string;
+    citations_count: number;
+    grounding_refs: string[];
+    source_types: string[];
+    run_id: string;
+    trace_ids: string[];
+    warnings: string[];
+    honest_limitation: string;
+  }> {
+    try {
+      return await this.request<any>("/api/proof/live-iq/run", { method: "POST" });
+    } catch {
+      return {
+        selected_iq_layer: "Foundry IQ",
+        proof_level: "offline_mock_preview",
+        live_microsoft_iq: false,
+        azure_ai_search_configured: false,
+        azure_ai_search_used_this_run: false,
+        foundry_model_configured: false,
+        foundry_model_used_this_run: false,
+        active_reasoning_provider: "local",
+        active_grounding_provider: "local_iq",
+        citations_count: 3,
+        grounding_refs: ["knowledge/foundry_docs/remediation_playbook.md#chunk-3"],
+        source_types: ["remediation_playbooks"],
+        run_id: "mock-run-id-1234",
+        trace_ids: ["mock-trace-1", "mock-trace-2"],
+        warnings: ["API Offline. Ran local simulation test proof."],
+        honest_limitation: "Offline mock mode. No live Azure OpenAI or Azure AI Search connection exists."
+      };
+    }
+  }
 }
 
 // Standalone functions required by frontend tests and contracts
@@ -529,3 +613,5 @@ export function runAnalysisWithOptions(experimentId: string) { return ApiClient.
 export function streamAnalysis(experimentId: string) { return ApiClient.streamAnalysis(experimentId); }
 export function searchKnowledge(query: string) { return ApiClient.searchKnowledge(query); }
 export function generateReport(experimentId: string) { return ApiClient.generateReport(experimentId); }
+export function getProofStatus() { return ApiClient.getProofStatus(); }
+export function runProofCheck() { return ApiClient.runProofCheck(); }

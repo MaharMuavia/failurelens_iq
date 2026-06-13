@@ -44,6 +44,7 @@ from backend.api.routes.report import router as report_router
 from backend.api.routes.readiness import router as readiness_router
 from backend.api.routes.cost import router as cost_router
 from backend.api.routes.iq_status import router as iq_status_router
+from backend.api.routes.proof import router as proof_router
 
 
 JUDGE_AGENTS = [
@@ -100,7 +101,7 @@ JUDGE_AGENTS = [
 
 def build_iq_provider(config: Any, grounding_adapter: GroundingAdapter, knowledge_index: KnowledgeIndex) -> Any:
     integrations = config.enabled_integrations
-    if config.app_mode == "production" and integrations.get("azure_ai_search"):
+    if integrations.get("azure_ai_search"):
         return AzureFoundryIQProvider(grounding_adapter)
     return FoundryIQLocalAdapter()
 
@@ -217,6 +218,60 @@ def create_app() -> FastAPI:
         if settings.CORS_ALLOW_CREDENTIALS and ("*" in cors_origins or any(o == "*" for o in cors_origins)):
             raise ValueError("CORS configuration is unsafe: Wildcard '*' origins are not allowed with allow_credentials=True in production mode.")
 
+    # Validate required credentials for production mode
+    foundry_model_configured = bool(
+        (settings.FOUNDRY_PROJECT_ENDPOINT or settings.FOUNDRY_OPENAI_BASE_URL)
+        and settings.FOUNDRY_API_KEY
+        and settings.FOUNDRY_MODEL_DEPLOYMENT
+    )
+    foundry_agent_configured = bool(
+        settings.FOUNDRY_PROJECT_ENDPOINT
+        and settings.FOUNDRY_AGENT_NAME
+    )
+    search_configured = bool(
+        settings.AZURE_AI_SEARCH_ENDPOINT
+        and settings.AZURE_AI_SEARCH_KEY
+    )
+    blob_configured = bool(
+        settings.AZURE_STORAGE_CONNECTION_STRING
+        and settings.AZURE_BLOB_CONTAINER
+    )
+    cosmos_configured = bool(
+        settings.AZURE_COSMOS_ENDPOINT
+        and settings.AZURE_COSMOS_KEY
+        and settings.AZURE_COSMOS_DATABASE
+        and settings.AZURE_COSMOS_CONTAINER
+    )
+
+    if settings.APP_MODE == "production":
+        # Fail fast if required live Microsoft IQ credentials are missing (specifically search and model provider keys)
+        if not search_configured:
+            raise ValueError("Production mode requires Azure AI Search credentials (AZURE_AI_SEARCH_ENDPOINT and AZURE_AI_SEARCH_KEY).")
+        
+        if settings.MODEL_PROVIDER == "azure_openai":
+            if not (settings.AZURE_OPENAI_ENDPOINT and settings.AZURE_OPENAI_API_KEY and settings.AZURE_OPENAI_DEPLOYMENT):
+                raise ValueError("Azure OpenAI credentials are required when MODEL_PROVIDER is 'azure_openai'.")
+        elif settings.MODEL_PROVIDER == "foundry_openai":
+            if not foundry_model_configured:
+                raise ValueError("Foundry OpenAI credentials (endpoint/base URL, api key, and deployment) are required when MODEL_PROVIDER is 'foundry_openai'.")
+        elif settings.MODEL_PROVIDER == "foundry_agent":
+            if not foundry_agent_configured:
+                raise ValueError("Foundry Agent credentials (project endpoint and agent name) are required when MODEL_PROVIDER is 'foundry_agent'.")
+
+    # Clear startup status logging
+    active_reasoning = settings.MODEL_PROVIDER
+    active_grounding = "azure_ai_search" if search_configured else "local_iq"
+    
+    logger.info("=== FailureLens IQ Startup Status ===")
+    logger.info(f"Foundry model configured: {'Yes' if foundry_model_configured else 'No'}")
+    logger.info(f"Foundry agent configured: {'Yes' if foundry_agent_configured else 'No'}")
+    logger.info(f"Azure AI Search configured: {'Yes' if search_configured else 'No'}")
+    logger.info(f"Blob configured: {'Yes' if blob_configured else 'No'}")
+    logger.info(f"Cosmos configured: {'Yes' if cosmos_configured else 'No'}")
+    logger.info(f"Active reasoning provider: {active_reasoning}")
+    logger.info(f"Active IQ grounding provider: {active_grounding}")
+    logger.info("=====================================")
+
     app = FastAPI(title="FailureLens IQ", version="1.0.0")
 
     # Add Middlewares (order matters: request flows from top to bottom, response from bottom to top)
@@ -283,6 +338,7 @@ def create_app() -> FastAPI:
     app.include_router(report_router)
     from backend.api.routes.prompt_analysis import router as prompt_analysis_router
     app.include_router(prompt_analysis_router)
+    app.include_router(proof_router)
 
     return app
 

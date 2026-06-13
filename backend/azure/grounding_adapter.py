@@ -38,7 +38,7 @@ class GroundingAdapter:
             exp = self.data_loader.get_experiment(experiment_id)
         except KeyError:
             return []
-        if self.config.is_demo or not self.search_client.enabled:
+        if not self.search_client.enabled:
             return [
                 GroundingRef(
                     source_type="local_demo_grounding",
@@ -59,7 +59,7 @@ class GroundingAdapter:
         return self._refs_from_search_results(results)
 
     async def retrieve_historical_failures(self, query: str, top_k: int = 5) -> list[GroundingRef]:
-        if self.config.is_demo or not self.search_client.enabled:
+        if not self.search_client.enabled:
             hits = self.knowledge_index.search(query, top_k=top_k)
             return [
                 GroundingRef(
@@ -85,13 +85,18 @@ class GroundingAdapter:
         return await self.retrieve_historical_failures(f"{failure_category} remediation playbook", top_k=5)
 
     async def store_reasoning_trace(self, analysis_id: str, trace: dict) -> dict:
-        if self.config.is_demo:
-            return {"stored": False, "analysis_id": analysis_id, "mode": "demo", "message": DEMO_NOTE}
+        if not self.cosmos_client.enabled:
+            return {
+                "stored": False,
+                "analysis_id": analysis_id,
+                "reason": "credentials_missing",
+                "warning": "Azure Cosmos DB credentials are not configured; trace persistence is local/demo only.",
+            }
         if not settings.ENABLE_AZURE_TRACE_STORAGE:
             return {
                 "stored": False,
                 "analysis_id": analysis_id,
-                "mode": "production",
+                "mode": "production" if not self.config.is_demo else "demo",
                 "reason": "disabled_by_cost_guard",
                 "message": "Azure Cosmos trace storage is disabled by ENABLE_AZURE_TRACE_STORAGE=false.",
             }

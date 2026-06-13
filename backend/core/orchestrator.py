@@ -39,12 +39,24 @@ class Orchestrator:
         self.planner = Planner()
         self.gate = ConfidenceGate()
         
-        openai_client = getter("openai_client")
-        if not openai_client:
-            from backend.azure.config import load_azure_config
-            from backend.azure.openai_client import AzureOpenAIClient
-            openai_client = AzureOpenAIClient(load_azure_config())
-        self.llm_reasoning_provider = LLMReasoningProvider(openai_client)
+        llm_provider = getter("llm_reasoning_provider")
+        if llm_provider:
+            self.llm_reasoning_provider = llm_provider
+        else:
+            openai_client = getter("openai_client")
+            if not openai_client:
+                from backend.azure.config import load_azure_config
+                from backend.azure.openai_client import AzureOpenAIClient
+                openai_client = AzureOpenAIClient(load_azure_config())
+            direct_openai_client = getter("direct_openai_client")
+            foundry_openai_client = getter("foundry_openai_client")
+            foundry_agent_client = getter("foundry_agent_client")
+            self.llm_reasoning_provider = LLMReasoningProvider(
+                azure_openai_client=openai_client,
+                openai_client=direct_openai_client,
+                foundry_openai_client=foundry_openai_client,
+                foundry_agent_client=foundry_agent_client,
+            )
 
         deps = {"iq_provider": self.iq_provider, "scoring_service": self.scoring_service, "data_loader": self.data_loader}
         self.intake = IntakeAgent(**deps)
